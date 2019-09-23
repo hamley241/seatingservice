@@ -1,0 +1,44 @@
+theatre:
+  default:
+    seats_matrix:
+      - name: A
+        count: 10
+        seat_type: normal
+      - name: B
+        count: 10
+        seat_type: normal
+      - name: C
+        count: 10
+        seat_type: normal
+      - name: D
+        count: 10
+        seat_type: normal
+      - name: E
+        count: 10
+        seat_type: normal
+      - name: F
+        count: 10
+        seat_type: normal
+      - name: G
+        count: 10
+        seat_type: normal
+      - name: H
+        count: 10
+        seat_type: normal
+      - name: I
+        count: 10
+        seat_type: normal
+      - name: J
+        count: 10
+        seat_type: normal
+
+
+#      - B: 10
+#      - C: 10
+#      - D: 10
+#      - E: 10
+#      - F: 10
+#      - G: 10
+#      - H: 10
+#      - I: 10
+#      - J: 10

@@ -30,6 +30,9 @@ class Seat(object):
     def is_booked(self):
         return SeatStatus.BOOKED == self.get_status()
 
+    def is_empty(self):
+        return SeatStatus.NOT_BOOKED == self.get_status()
+
 
     def get_status(self):
         return self._status
