@@ -8,7 +8,9 @@ import numpy as np
 class Show(object):
     def __init__(self, name="default", movie_name=None, timings=None):
         self._name = name
-        self._seats = self._init_seats_matrix()
+        self.row_names_index = None
+        self._seats = None
+        self._init_seats()
 
     def get_name(self):
         return self._name
@@ -16,13 +18,16 @@ class Show(object):
     def get_seats(self):
         return self._seats
 
-    def _init_seats_matrix(self):
+    def _init_seats(self):
         seats_config = Config.get_data_map().get("theatre").get(self.get_name()).get("seats_matrix")
         seats_matrix = []
+        row_index_mapping = {}
         print(seats_config)
         for cnt in reversed(range(0, len(seats_config))):
             seats_matrix.append(self._init_row_seats(cnt, seats_config))
-        return seats_matrix
+            row_index_mapping[seats_config[cnt].get("name")] = cnt
+        self.row_names_index = row_index_mapping
+        self._seats =  seats_matrix
 
     def _init_row_seats(self, cnt, seats_config):
         row_name = seats_config[cnt]["name"]
@@ -36,7 +41,7 @@ class Show(object):
 
     def __str__(self):
         if not self.get_seats():
-            return None
+            return ""
 
         seats_ = self.get_seats()
         seats_names = []
@@ -87,22 +92,30 @@ class Show(object):
             selected_seats = self.find_nonconsecutive_empty_seats(num_of_seats, empty_seats)
         return selected_seats
 
-    def book(self, seats_list=None,num_seats=0):
-        if seats_list:
-            return self._book_seats_list(seats_list)
+    def book(self, seats_names=None,num_seats=0, txn_id=None):
+        seats_list = []
+        if seats_names:
+            #Check if the seats are empty
+            seats_list = self._get_seats_from_names(seats_names)
+            for seat in seats_list:
+                if seat.is_booked():
+                    print("Request for already booked seat")
+                    #Raise an exception
+                    return []
         elif num_seats:
             seats_list = self.find_best_seats(num_seats)
-            if seats_list:
-                print("CAN assign")
-                return self._book_seats_list(seats_list)
-            else:
-                print("Cant assign")
-                return []
         else:
             #Raise an exception here
             return
 
+        if seats_list:
+            print("CAN assign")
+            return self._book_seats_list(seats_list)
+        else:
+            print("Cant assign")
+            return []
 
+    
     def __book(self, seats_list):
         pass
 
@@ -134,8 +147,8 @@ class Show(object):
             row_indexes, col_indices = np.where(empty_seats_arr == 1)
             return [s.get_seats()[row_indexes[cnt]][col_indices[cnt]] for cnt, item in enumerate(col_indices)][:num_of_seats]
 
-
-
+    def _get_seats_from_names(self, seats_names):
+        pass
 
 
 

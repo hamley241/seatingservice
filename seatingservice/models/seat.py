@@ -14,6 +14,9 @@ class Seat(object):
     def __str__(self):
         return "".join([str(self._col_num), str(self._row_num)])
 
+    def get_name(self):
+        return "".join([str(self._col_num), str(self._row_num)])
+
     def book(self):
         if self.is_booked():
             return False

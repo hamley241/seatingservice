@@ -37,4 +37,4 @@ class Config:
 
 if __name__ == "__main__":
     cfg = Config().get_data_map()
-    print(cfg.get("theatre").get("default").get("seats_matrix")[0].get("name"))
+    # print(cfg.get("theatre").get("default").get("seats_matrix")[0].get("name"))
