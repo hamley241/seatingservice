@@ -18,3 +18,9 @@ class SeatType(Enum):
     EXECUTIVE = 0
     RECLYNER = 2 #
 
+    @classmethod
+    def is_valid(cls, seat_type):
+        if seat_type in [cls.NORMAL, cls.EXECUTIVE, cls.RECLYNER]:
+            return True
+        return False
+
