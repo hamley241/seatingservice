@@ -89,3 +89,7 @@ if __name__ == "__main__":
     seat_assigner = SeatAssigner(seats_asssginig_service, requests_file, response_file)
     seat_assigner.process()
     print("Responses can be found at {}".format(os.path.abspath(response_file_name)))
+    logging.info("INFO LOG")
+    logging.error("Error LOG")
+    logging.debug("Debug LOG")
+    logging.warn("warn LOG")

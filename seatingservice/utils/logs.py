@@ -20,6 +20,9 @@ class Logger:
             formatter = logging.Formatter(Logger.BASIC_LOG_FORMAT, Logger.TIME_FORMAT)
             handler.setFormatter(formatter)
             Logger.__logger.addHandler(handler)
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(formatter)
+            Logger.__logger.addHandler(console_handler)
             Logger.__loggers[name] = Logger.__logger
             return Logger.__logger
         return cls.__logger

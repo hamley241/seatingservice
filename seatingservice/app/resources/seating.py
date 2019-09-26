@@ -1,8 +1,8 @@
-import logging
 import app.views as views
 from models.screen import Screen
 from utils.config import Config
-
+from utils.logs import Logger
+logging = Logger.get_logger()
 
 class Seats(object):
     _show = Screen(Config.get_data_map().get("theatre"))
