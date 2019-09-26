@@ -3,7 +3,6 @@ from models.screen import Screen
 from utils.config import Config
 from utils.constants import SeatsRequest
 from utils.logs import Logger
-from models.exceptions import ClientError
 import utils
 
 logging = Logger.get_logger()

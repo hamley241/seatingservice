@@ -101,7 +101,7 @@ class Screen(object):
         Returns: int, returns total number of available seats
 
         """
-        print("Total seats {} Available seats {}".format(str(self.get_total_seats_count()),
+        logging.debug("Total seats {} Unavailable seats {}".format(str(self.get_total_seats_count()),
                                                          str(self.get_unavailable_seats().get_total_size())))
         return self.get_total_seats_count() - self.get_unavailable_seats().get_total_size()
 
@@ -332,9 +332,9 @@ class Screen(object):
 
         """
         try:
-            num_seats = utils.validate_int(txn_id[1:])
+            num_seats = utils.validate_int(num_seats)
         except Exception as e:
-            raise ClientError()
+            raise ValueError()
         available_seats = self._get_available_seats()
         seats_list = self._find_available_seats_to_assign(available_seats, num_seats)
         if seats_list:
@@ -395,17 +395,11 @@ if __name__ == "__main__":
     f = open("Debug.txt.1", "w")
     for i in range(1, 2):
         for i in range(1, 800):
-            # num_seats = 4 if i <= 20 else random.randint(1,6)
             num_seats = random.randint(1, 30)
             print("Seats requested {}".format(str(num_seats)))
-            f.write("\n\nSeats Request - " + str(num_seats))
-            f.write("\nSeats total - " + str(scr.get_total_seats_count()))
-            f.write("\nSeats total - " + str(scr.get_unavailable_seats().get_total_size()))
             bs = scr.book(num_seats=num_seats)
-            f.write("\nSeats Available - " + str(scr.get_available_seats_count()))
-            f.write("\nSeats Assigned - " + str(bs))
-            print("\t".join([str(item) for item in bs]))
-            print("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
+            logging.info("\t".join([str(item) for item in bs]))
+            logging.info("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
             logging.error("Error log")
             logging.info("info log")
             logging.debug("debug log")
