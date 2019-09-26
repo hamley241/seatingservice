@@ -5,7 +5,6 @@ from utils.config import Config
 
 
 class Seats(object):
-    # _show = Show()
     _show = Screen(Config.get_data_map().get("theatre"))
 
     @classmethod

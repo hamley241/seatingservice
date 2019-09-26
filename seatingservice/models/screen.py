@@ -1,6 +1,5 @@
 import statistics
 import sys
-
 import numpy as np
 import re
 from utils import numpy_fillna
@@ -10,7 +9,6 @@ from models.seatsrow import SeatsRow
 from models.unassignedseats import UnavailableSeats
 from models.seatslayout import SeatsLayout
 from models.seat import Seat
-import logging
 from utils.logs import Logger
 
 logging = Logger.get_logger()
