@@ -5,6 +5,9 @@
 from collections import OrderedDict
 from utils.constants import SeatType
 from utils import memoize
+import numpy as np
+import statistics
+import sys
 class SeatNotFoundException(Exception):
     pass
 
@@ -179,6 +182,13 @@ class Screen(object):
         return empty_seats
 
     def get_empty_seats(self):
+        """
+
+        Returns:
+
+        """
+        # This is like a DB query, So filtering based on criteria has to be done
+
         empty_seats = EmptySeats()
         for row, row_seats in self.get_layout().items():
             row_of_empty_seats = row_seats.keys() - self.get_not_available_seats().get_row(row)
@@ -197,22 +207,58 @@ class Screen(object):
         """
         return "".join([str(int(item)) for item in numpy_arr])
 
-    def test_np(self,empty_seats, num_of_seats):
-        import numpy as np
-        arr = np.array(list(empty_seats.get("A")))
-        print("ARR is "+str(arr))
-        self.get_numpy_arr_wth_empty_indicators(arr, empty_seats)
-        # arr.sort()
+    def _get_consecutive_seats(self, empty_seats, num_of_seats):
 
-        for row, row_data in empty_seats:
+        consecutive_string = "".join(["1"] * num_of_seats)
+        consecutive_re = re.compile(consecutive_string)
+        for row, rowdata in empty_seats.items():
+            boolarray = self.get_numpy_arr_wth_row_empty_indicators(rowdata)
+            if boolarray.sum() >= num_of_seats:
+                row_hash = self.get_string_hash(boolarray)
+                results = list(consecutive_re.finditer(row_hash))
+                if results:
+                    best = len(self.get_layout().get_row(row)) // 2
+                    small_diff = sys.maxsize
+                    res_match = None
+                    for res in results:
+                        res_mean = statistics.mean(res.span())
+                        new_diff = abs(res_mean - best)
+                        if new_diff < small_diff:
+                            res_match = res
+                            small_diff = new_diff
+                    print("Found consec")
+                    print(res_match.span())
+                    return [VanillaSeat.get_seat_name(row,col+1) for col in range(res_match.span()[0], res_match.span()[1])]
+
+    # def get_seat_name(self, row):
+    #
+    #
+    #     for row, row_data in empty_seats:
+    #
+    #
+    #     return arr[[oned]==1]
+
+    # @memoize
+    def get_numpy_arr_wth_row_empty_indicators(self, empty_seats_row):
+        """
+        Creates a numpy array representation with 1 indicating empty seats in row
+        for faster computations
+        Args:
+            empty_seats_row: Set containing the seats numbers which are empty
+
+        Returns: 1D numpy array
+
+        """
+        zeros_arr = np.zeros(max(empty_seats_row) + 1)
+        zeros_arr[list(empty_seats_row)] = 1
+        zeros_arr = zeros_arr[1:]
+        return zeros_arr
 
 
-        return arr[[oned]==1]
-
-    def get_numpy_arr_wth_empty_indicators(self, arr, empty_seats):
-        zeros_arr = np.zeros(max(arr) + 1)
-        zeros_arr[list(empty_seats.get("A"))] = 1
-
+    def get_seats_to_assign(self, num_seats):
+        empty_seats = self.get_empty_seats()
+        consecutive_seats = self._get_consecutive_seats(empty_seats, num_seats)
+        return consecutive_seats
     @memoize
     def _get_empty_canvas(self):
         self.get_layout().get
@@ -284,6 +330,9 @@ class VanillaSeat(object):
             raise ValueError("Expecting a valid input SeatType")
         return seat_type
 
+    @staticmethod
+    def get_seat_name(row,col):
+        return "".join([row, str(col)])
 # if __name__ == "###1__main__":
 #     sm = SeatModel(2)
 #     print(sm)
@@ -322,8 +371,15 @@ if __name__ == "__main__":
     print(scr.get_not_available_seats().get_total_size())
     print(scr.get_available_seats_count())
     print(scr.get_not_available_seats())
-    es = scr.find_best_seats(2)
+    es = scr.get_empty_seats()
     print(es.get_total_size())
     print("Done")
-    oned = scr.test_np(es)
-    oned[oned==1]
+    print(es)
+    oned = scr.get_seats_to_assign(2)
+    oned = scr.get_seats_to_assign(3)
+    scr.get_not_available_seats().get_row("J").add(3)
+    scr.get_not_available_seats().get_row("J").add(6)
+    oned = scr.get_seats_to_assign(2)
+    print(scr.get_not_available_seats())
+    print(scr.get_available_seats_count())
+    print(oned)
