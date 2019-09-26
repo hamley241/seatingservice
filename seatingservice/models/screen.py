@@ -10,7 +10,6 @@ from models.unassignedseats import UnavailableSeats
 from models.seatslayout import SeatsLayout
 from models.seat import Seat
 from utils.logs import Logger
-from models.exceptions import ClientError
 import utils
 
 logging = Logger.get_logger()
@@ -215,10 +214,10 @@ class Screen(object):
         """
         available_seats_arr = self.get_available_seats_indicator_array(available_seats)
         row_wise_sum = available_seats_arr.sum(axis=1)
-        if not self._can_find_available(row_wise_sum, num_seats):
+        if not self._can_find_available(row_wise_sum, num_of_seats):
             logging.debug("Cannot assign seats seats ")
             return []
-        if self._can_find_available_in_same_row(row_wise_sum, num_seats):
+        if self._can_find_available_in_same_row(row_wise_sum, num_of_seats):
             return self._find_seats_from_same_row(available_seats, available_seats_arr, num_of_seats, row_wise_sum)
 
         # DEFAULT CASE GREEDY ASSIGNMENT

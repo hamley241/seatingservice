@@ -30,7 +30,7 @@ class SeatAssigner:
                 if response.get(SeatsResponse.STATUS) == "success":
                     response_string = ",".join(response.get(SeatsResponse.SEATS))
                     self.event_producer.write("{} {}\n".format(event_obj.get_txn_id(), response_string))
-                    logging.info("Assigned Seats {} {}".format(str(event_obj.get_txn_id()), response.get("body")))
+                    logging.info("Assigned Seats {} {}".format(str(event_obj.get_txn_id()), response_string))
                 else:
                     logging.error("Could not assign to request event_obj {}".format(event_obj.to_dict()))
                     self.event_producer.write("{}\n".format(event_obj.get_txn_id()))

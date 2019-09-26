@@ -1,5 +1,8 @@
 from events.exceptions import InvalidEventException
 from utils import validate_int
+from utils.logs import Logger
+
+logging = Logger.get_logger(__name__)
 
 
 class SeatRequestEvent:
@@ -34,24 +37,33 @@ class SeatRequestEvent:
 
         """
         if not event:
+            logging.debug("No event")
             raise InvalidEventException()
 
-        data = event.strip("\n").split(" ")
-        if not len(data) == 2:
+        data = event.rstrip("\n").rstrip("\r").rstrip("\n").strip(" ").split(" ")
+        if not data:
+            logging.debug("Data is None or Empty")
+            raise InvalidEventException()
+
+        if data and not len(data) == 2:
+            logging.debug("Length of data != 2, event is {} and length is {}, data is {}".format(event, str(len(data)),str(data)))
             raise InvalidEventException()
 
         txn_id = data[0]
         try:
-            seats_count = int(data[1])
+            seats_count = validate_int(data[1])
         except Exception as e:
+            logging.debug("Seats count is not int, event is {}".format(event))
             raise InvalidEventException
 
         if not txn_id.startswith("R"):
+            logging.debug("Does not start with R, event is {}".format(event))
             raise InvalidEventException()
 
         try:
             validate_int(txn_id[1:])
         except Exception as e:
+            logging.debug("Issue with TransactionID event is {}".format(event))
             raise InvalidEventException()
 
         return SeatRequestEvent(txn_id, seats_count)
