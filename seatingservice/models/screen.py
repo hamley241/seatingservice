@@ -169,6 +169,7 @@ class Screen(object):
         return self._total_seats_count
 
     def get_available_seats_count(self):
+        print("Total seats {} Available seats {}".format(str(self.get_total_seats_count()), str(self.get_not_available_seats().get_total_size())))
         return self.get_total_seats_count() - self.get_not_available_seats().get_total_size()
 
     def get_layout(self):
@@ -212,7 +213,7 @@ class Screen(object):
         consecutive_string = "".join(["1"] * num_of_seats)
         consecutive_re = re.compile(consecutive_string)
         for row, rowdata in empty_seats.items():
-            boolarray = self.get_numpy_arr_wth_row_empty_indicators(rowdata)
+            boolarray = self.get_numpy_arr_wth_row_empty_indicators(row, rowdata)
             if boolarray.sum() >= num_of_seats:
                 row_hash = self.get_string_hash(boolarray)
                 results = list(consecutive_re.finditer(row_hash))
@@ -230,6 +231,33 @@ class Screen(object):
                     print(res_match.span())
                     return [VanillaSeat.get_seat_name(row,col+1) for col in range(res_match.span()[0], res_match.span()[1])]
 
+    def find_nonconsecutive_empty_seats(self, empty_seats, num_of_seats):
+
+        empty_seats_arr = np.array([np.array(self.get_numpy_arr_wth_row_empty_indicators(row, item)) for row, item in empty_seats.items()])
+        print(empty_seats_arr)
+        empty_seats_arr = numpy_fillna(empty_seats_arr)
+        print(empty_seats_arr)
+        rows_sum = empty_seats_arr.sum(axis=1)
+        if np.sum(rows_sum) < num_of_seats:
+            print("Cannot assign seats ")
+            return []
+        elif np.max(rows_sum) >= num_of_seats:
+            row_indx = np.argmax(rows_sum>= num_of_seats)
+            col_indices = (np.where(empty_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
+            print("DEBUG Assigning in a single row {}".format((str(num_of_seats))))
+            return [VanillaSeat.get_seat_name(list(empty_seats.keys())[row_indx],int(col)) for col in col_indices] #[s.get_seats()[row_indx][col_indx] for col_indx in col_indices]
+        else:
+            print("DEBUG Cannot assign in a single row {}".format((str(num_of_seats))))
+            row_indexes, col_indices = np.where(empty_seats_arr == 1)
+            found_seats = []
+            for row, row_data in empty_seats.items():
+                if len(found_seats) >= num_seats:
+                    break
+                if len(row_data) != 0:
+                    found_seats = found_seats + [VanillaSeat.get_seat_name(row,col) for col in list(row_data)[:num_seats]]
+                    print(found_seats)
+            return found_seats[:num_seats]
+            # return [VanillaSeat.get_seat_name(list(empty_seats.keys())[row_indexes[cnt]], col_indices[cnt]) for cnt, item in enumerate(col_indices)][:num_of_seats]
     # def get_seat_name(self, row):
     #
     #
@@ -239,7 +267,7 @@ class Screen(object):
     #     return arr[[oned]==1]
 
     # @memoize
-    def get_numpy_arr_wth_row_empty_indicators(self, empty_seats_row):
+    def get_numpy_arr_wth_row_empty_indicators(self, row, empty_seats_row):
         """
         Creates a numpy array representation with 1 indicating empty seats in row
         for faster computations
@@ -249,22 +277,41 @@ class Screen(object):
         Returns: 1D numpy array
 
         """
-        zeros_arr = np.zeros(max(empty_seats_row) + 1)
+        # if not (empty_seats_row):
+        #     print("AVAILANLE {}".format(str(self.get_available_seats_count())))
+        #     empty_seats_row = [0]
+        #     print("AVAILANLE {}".format(str(self.get_available_seats_count())))
+        #     print("CHECK THE AVAIALBLE SEATS")
+
+        zeros_arr = np.zeros(len(self.get_layout().get_row(row)) + 1)
         zeros_arr[list(empty_seats_row)] = 1
         zeros_arr = zeros_arr[1:]
         return zeros_arr
 
-
     def get_seats_to_assign(self, num_seats):
         empty_seats = self.get_empty_seats()
         consecutive_seats = self._get_consecutive_seats(empty_seats, num_seats)
+        if not consecutive_seats:
+            consecutive_seats = self.find_nonconsecutive_empty_seats(empty_seats, num_seats)
+        if not consecutive_seats:
+            print("Not able to assign this time")
         return consecutive_seats
     @memoize
     def _get_empty_canvas(self):
         self.get_layout().get
         pass
 
+    def book(self, seats_count):
+        seats_list  = self.get_seats_to_assign(seats_count)
+        return self._book(seats_list)
 
+    def _book(self,seats_list):
+        for seat in seats_list:
+            if self.get_not_available_seats().has(seat):
+                print("isue")
+            self.get_not_available_seats().add(seat)
+            print("SEAT {} made not available".format(seat))
+        return seats_list
 # class BookedSeats(OrderedDict)
 
 class ReservedSeats(Screen):
@@ -354,32 +401,35 @@ class BookedSeats(ScreenLayout):
     pass
 
 
+def numpy_fillna(data):
+    # Get lengths of each row of data
+    lens = np.array([len(i) for i in data])
+
+    # Mask of valid places in each row
+    mask = np.arange(lens.max()) < lens[:,None]
+
+    # Setup output array and put elements from data into masked positions
+    out = np.zeros(mask.shape, dtype=data.dtype)
+    out[mask] = np.concatenate(data)
+    return out
+
 from utils.config import  Config
 if __name__ == "__main__":
     conf = Config.get_data_map().get("theatre")
     scr = Screen(conf)
-    for k, v in scr.get_layout().items():
-        for k1, v1 in v.items():
-            print(type(v1))
-    print(scr.get_layout())
-    print(scr.get_layout().find("A1"))
-    scr.get_not_available_seats().get_row("A").add(1)
-    scr.get_not_available_seats().get_row("B").add(1)
-    scr.get_not_available_seats().get_row("A").add(2)
-    scr.get_not_available_seats().get_row("A").add(3)
-    scr.get_not_available_seats().get_row("A").add(6)
-    print(scr.get_not_available_seats().get_total_size())
-    print(scr.get_available_seats_count())
-    print(scr.get_not_available_seats())
-    es = scr.get_empty_seats()
-    print(es.get_total_size())
-    print("Done")
-    print(es)
-    oned = scr.get_seats_to_assign(2)
-    oned = scr.get_seats_to_assign(3)
-    scr.get_not_available_seats().get_row("J").add(3)
-    scr.get_not_available_seats().get_row("J").add(6)
-    oned = scr.get_seats_to_assign(2)
-    print(scr.get_not_available_seats())
-    print(scr.get_available_seats_count())
-    print(oned)
+    print("""################3\n\n\n""")
+    import random
+    f = open("Debug.txt.1","w")
+    for i in range(1, 1000):
+        # num_seats = 4 if i <= 20 else random.randint(1,6)
+        num_seats = random.randint(1, 6)
+        print("Seats requested {}".format(str(num_seats)))
+        f.write("\n\nSeats Request - "+str(num_seats))
+        f.write("\nSeats total - "+str(scr.get_total_seats_count()))
+        f.write("\nSeats total - "+str(scr.get_not_available_seats().get_total_size()))
+        bs = scr.book(seats_count=num_seats)
+        f.write("\nSeats Available - "+str(scr.get_available_seats_count()))
+        f.write("\nSeats Assigned - "+str(bs))
+        print("\t".join([str(item) for item in bs]))
+        print("Empty seats count {}\n##########\n".format(scr.get_available_seats_count()))
+
