@@ -11,8 +11,10 @@ from models.seatslayout import SeatsLayout
 from models.seat import Seat
 from utils.logs import Logger
 from models.exceptions import ClientError
-logging = Logger.get_logger()
 import utils
+
+logging = Logger.get_logger()
+
 
 class Screen(object):
     """
@@ -267,12 +269,12 @@ class Screen(object):
 
     def _find_seats_from_different_rows(self, available_seats, num_seats):
         """
-        Finds the
+        Finds seats from different rows
         Args:
-            available_seats:
-            num_seats:
+            available_seats: AvailableSeats object
+            num_seats: number of seats to find
 
-        Returns:
+        Returns: [], a list containing available seats that can be booked
 
         """
         found_seats = []
@@ -343,8 +345,6 @@ class Screen(object):
                                                                                                      available_seats.get_total_size())))
         return seats_list
 
-
-
     def _book(self, seats_list, status=SeatStatus.BOOKED):
         """
         Marks a seat for given Screen at show timings as Unavaiable
@@ -409,4 +409,4 @@ if __name__ == "__main__":
             logging.error("Error log")
             logging.info("info log")
             logging.debug("debug log")
-    print("Time taken :  {}".format(str((time.time() - ti))))
+    logging.info("Time taken :  {}".format(str((time.time() - ti))))

@@ -3,6 +3,9 @@ from utils import validate_int
 
 
 class SeatRequestEvent:
+    """
+    SeatRequest event
+    """
 
     def __init__(self, trxn_id, seats_count):
         self._txn_id = trxn_id
@@ -15,10 +18,21 @@ class SeatRequestEvent:
         return self._seats_count
 
     def to_dict(self):
+        """
+        Returns: The event data in form of dict
+        """
         return dict(txnId=self.get_txn_id(), seatsCount=self.get_seats_count())
 
     @classmethod
     def validate_event(cls, event):
+        """
+        Validates the possible event string and returns event object
+        Args:
+            event: string containig event data
+
+        Returns: SeatRequestEvent
+
+        """
         if not event:
             raise InvalidEventException()
 

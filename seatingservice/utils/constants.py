@@ -6,6 +6,10 @@ class SeatsRequest:
     SEATS = "seats"
 
 
+class SeatsResponse:
+    STATUS = "status"
+    SEATS = "seats"
+
 
 class ResponseStatusCode(Enum):
     SUCCESS = 200

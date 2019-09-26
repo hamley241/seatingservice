@@ -22,7 +22,7 @@ if __name__ == "__main__":
     requests_file = open(inputfile, "r")
     response_file_name = "responses.txt"
     response_file = open(response_file_name, "w")
-    seats_asssginig_service = Seats()
-    seat_assigner = SeatAssigner(seats_asssginig_service, requests_file, response_file)
+    seats_assigninig_service = Seats()
+    seat_assigner = SeatAssigner(seats_assigninig_service, requests_file, response_file)
     seat_assigner.process()
     print("Responses can be found at {}".format(os.path.abspath(response_file_name)))
