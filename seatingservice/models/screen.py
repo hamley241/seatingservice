@@ -231,8 +231,24 @@ class Screen(object):
                     print(res_match.span())
                     return [VanillaSeat.get_seat_name(row,col+1) for col in range(res_match.span()[0], res_match.span()[1])]
 
-    def find_nonconsecutive_empty_seats(self, empty_seats, num_of_seats):
+    def find_nonconsecutive_empty_seats1(self, empty_seats, num_of_seats):
+        empty_seats_arr = self.get_empty_seats_array(empty_seats)
+        rows_sum = empty_seats_arr.sum(axis=1)
+        if np.sum(rows_sum) < num_of_seats:
+            print("Cannot assign seats ")
+            return []
+        elif np.max(rows_sum) >= num_of_seats:
+            row_indx = np.argmax(rows_sum >= num_of_seats)
+            col_indices = (np.where(empty_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
+            print("DEBUG Assigning in a single row {}".format((str(num_of_seats))))
+            return [VanillaSeat.get_seat_name(list(empty_seats)[row_indx],col_indx+1) for col_indx in col_indices]
+        else:
+            print("DEBUG Cannot assign in a single row {}".format((str(num_of_seats))))
+            row_indexes, col_indices = np.where(empty_seats_arr == 1)
+            return [VanillaSeat.get_seat_name(list(empty_seats)[row_indexes[cnt]],col_indices[cnt]+1) for cnt, item in enumerate(col_indices)][
+                   :num_of_seats]
 
+    def find_nonconsecutive_empty_seats(self, empty_seats, num_of_seats):
         empty_seats_arr = np.array([np.array(self.get_numpy_arr_wth_row_empty_indicators(row, item)) for row, item in empty_seats.items()])
         print(empty_seats_arr)
         empty_seats_arr = numpy_fillna(empty_seats_arr)
@@ -245,7 +261,7 @@ class Screen(object):
             row_indx = np.argmax(rows_sum>= num_of_seats)
             col_indices = (np.where(empty_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
             print("DEBUG Assigning in a single row {}".format((str(num_of_seats))))
-            return [VanillaSeat.get_seat_name(list(empty_seats.keys())[row_indx],int(col)) for col in col_indices] #[s.get_seats()[row_indx][col_indx] for col_indx in col_indices]
+            return [VanillaSeat.get_seat_name(list(empty_seats.keys())[row_indx],int(col)+1) for col in col_indices] #[s.get_seats()[row_indx][col_indx] for col_indx in col_indices]
         else:
             print("DEBUG Cannot assign in a single row {}".format((str(num_of_seats))))
             row_indexes, col_indices = np.where(empty_seats_arr == 1)
@@ -257,7 +273,7 @@ class Screen(object):
                     found_seats = found_seats + [VanillaSeat.get_seat_name(row,col) for col in list(row_data)[:num_seats]]
                     print(found_seats)
             return found_seats[:num_seats]
-            # return [VanillaSeat.get_seat_name(list(empty_seats.keys())[row_indexes[cnt]], col_indices[cnt]) for cnt, item in enumerate(col_indices)][:num_of_seats]
+            # return [VanillaSeat.get_seat_name(list(empty_seats.keys())[row_indexes[cnt]], col_indices[cnt+1]) for cnt, item in enumerate(col_indices)][:num_of_seats]
     # def get_seat_name(self, row):
     #
     #
@@ -312,6 +328,17 @@ class Screen(object):
             self.get_not_available_seats().add(seat)
             print("SEAT {} made not available".format(seat))
         return seats_list
+
+    def get_empty_seats_array(self, empty_seats):
+        arr_holder = []
+        for row, row_data in empty_seats.items():
+            empty_indicator = np.zeros(len(self.get_layout().get_row(row))+1)
+            empty_indicator[list(row_data)] = 1
+            arr_holder.append(empty_indicator[1:])
+        return numpy_fillna(np.array(arr_holder))
+
+
+
 # class BookedSeats(OrderedDict)
 
 class ReservedSeats(Screen):
@@ -417,6 +444,10 @@ from utils.config import  Config
 if __name__ == "__main__":
     conf = Config.get_data_map().get("theatre")
     scr = Screen(conf)
+    es = scr.get_empty_seats()
+    resp = scr.get_empty_seats_array(es)
+    print(resp)
+    #
     print("""################3\n\n\n""")
     import random
     f = open("Debug.txt.1","w")
