@@ -11,6 +11,9 @@ from models.unassignedseats import UnavailableSeats
 from models.seatslayout import SeatsLayout
 from models.seat import Seat
 import logging
+from utils.logs import Logger
+
+logging = Logger.get_logger()
 
 
 class Screen(object):
@@ -94,7 +97,7 @@ class Screen(object):
         """
         return "".join([str(int(item)) for item in numpy_arr])
 
-    def _get_consecutive_seats(self, available_seats, num_of_seats):
+    def _find_consecutive_seats(self, available_seats, num_of_seats):
         """
         Searches for consecutive seats among available/vacant seats
         Args:
@@ -117,51 +120,90 @@ class Screen(object):
                     return self._find_centered_consecutive(results, row)
         return []
 
-    def _find_centered_consecutive(self, results, row):
-        best = len(self.get_layout().get_row(row)) // 2
-        small_diff = sys.maxsize
-        res_match = None
-        for res in results:
-            res_mean = statistics.mean(res.span())
-            new_diff = abs(res_mean - best)
-            if new_diff < small_diff:
-                res_match = res
-                small_diff = new_diff
-        print("Found consec")
-        print(res_match.span())
+    def _find_centered_consecutive(self, consecutive_search_results, row):
+        """
+        Finds the seats close to center of screen
+        Args:
+            consecutive_search_results: Results of regex findIter with span or should contain span with start and end of consec sequence
+            row: Row Identifier (Like row PK  of seat)
+
+        Returns: [] a list containing identifiers of consec seats
+
+        """
+        best_position = self._get_best_seat_position(row)
+        smallest_mean_diff = sys.maxsize
+        best_search_result = None
+        for search_result in consecutive_search_results:
+            res_mean = statistics.mean(search_result.span())
+            distance_between_means = abs(res_mean - best_position)
+            if distance_between_means < smallest_mean_diff:
+                best_search_result = search_result
+                smallest_mean_diff = distance_between_means
+        logging.debug(
+            "Found consecutive search results for {} seats in Row {}".format(str(best_search_result.span()), str(row)))
         return [Seat.get_seat_name(row, col + 1) for col in
-                range(res_match.span()[0], res_match.span()[1])]
+                range(best_search_result.span()[0], best_search_result.span()[1])]
+
+    def _get_best_seat_position(self, row):
+        best_position = len(self.get_layout().get_row(row)) // 2
+        return best_position
 
     def _find_nonconsecutive_available_seats(self, available_seats, num_of_seats):
         """
         Finds non-Consecutive available seats that can be assigned
         Args:
-            available_seats:
-            num_of_seats:
+            available_seats: AvailableSeats obj containing seats that can be assigned
+            num_of_seats: number of seats to find
+
+        Returns: [] A list containing the P/identifiers of seats that can be assigned
+
+        """
+        available_seats_arr = self.get_available_seats_indicator_array(available_seats)
+        row_wise_sum = available_seats_arr.sum(axis=1)
+        if not self._can_find_available(row_wise_sum, num_seats):
+            logging.debug("Cannot assign seats seats ")
+            return []
+        if self._can_find_available_in_same_row(row_wise_sum, num_seats):
+            return self._find_seats_from_same_row(available_seats, available_seats_arr, num_of_seats, row_wise_sum)
+
+        # DEFAULT CASE GREEDY ASSIGNMENT
+        logging.debug("Cannot assign in a single row {} ".format((str(num_of_seats))))
+        return self._find_seats_from_different_rows(available_seats, num_of_seats)
+
+    def _can_find_available(self, rows_sum, num_of_seats):
+        return sum(rows_sum) >= num_of_seats
+
+    def _can_find_available_in_same_row(self, row_wise_sum, num_of_seats):
+        return max(row_wise_sum) >= num_of_seats
+
+    def _find_seats_from_same_row(self, available_seats, available_seats_arr, num_of_seats, rows_sum):
+        """
+        Finds seats in same row from available seats
+        Args:
+            available_seats: AvailableSeats obj
+            available_seats_arr: Indicator array with 1s at available locations
+            num_of_seats: Number of seats to find
+            rows_sum: Array  containing row wise sum
 
         Returns:
 
         """
-        available_seats_arr = self.get_available_seats_indicator_array(available_seats)
-        rows_sum = available_seats_arr.sum(axis=1)
-        if sum(rows_sum) < num_of_seats:
-            print("Cannot assign seats ")
-            return []
-        if max(rows_sum) >= num_of_seats:
-            return self.get_seats_from_same_row(available_seats, available_seats_arr, num_of_seats, rows_sum)
-
-        # DEFAULT CASE GREEDY ASSIGNMENT
-        logging.debug("Cannot assign in a single row {}".format((str(num_of_seats))))
-        return self._get_seats_from_different_rows(available_seats, num_of_seats)
-
-    def get_seats_from_same_row(self, available_seats, available_seats_arr, num_of_seats, rows_sum):
-        row_indx = np.argmax(rows_sum >= num_of_seats)
+        row_indx = int(np.argmax(rows_sum >= num_of_seats))
         col_indices = (np.where(available_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
-        print("DEBUG Assigning in a single row {}".format((str(num_of_seats))))
+        logging.debug("Assigning in a single row: num of seat - {} ".format((str(num_of_seats))))
         return [Seat.get_seat_name(list(available_seats.keys())[row_indx], int(col) + 1) for col in
-                col_indices]  # [s.get_seats()[row_indx][col_indx] for col_indx in col_indices]
+                col_indices]
 
-    def _get_seats_from_different_rows(self, available_seats, num_seats):
+    def _find_seats_from_different_rows(self, available_seats, num_seats):
+        """
+        Finds the
+        Args:
+            available_seats:
+            num_seats:
+
+        Returns:
+
+        """
         found_seats = []
         for row, row_data in available_seats.items():
             if len(found_seats) >= num_seats:
@@ -187,9 +229,8 @@ class Screen(object):
         zeros_arr = zeros_arr[1:]
         return zeros_arr
 
-    def _get_seats_to_assign(self, num_seats):
-        available_seats = self.get_available_seats()
-        consecutive_seats = self._get_consecutive_seats(available_seats, num_seats)
+    def _find_available_seats_to_assign(self, available_seats, num_seats):
+        consecutive_seats = self._find_consecutive_seats(available_seats, num_seats)
         if consecutive_seats:
             return consecutive_seats
         non_consecutive_seats = self._find_nonconsecutive_available_seats(available_seats, num_seats)
@@ -199,10 +240,23 @@ class Screen(object):
         return consecutive_seats
 
     def book(self, num_seats, txn_id=None):
-        seats_list = self._get_seats_to_assign(num_seats)
+        """
+        Reserves the number of seats if seats are available for reserving
+        Args:
+            num_seats: int number of seats to reserve
+            txn_id: Txn Id associated with reservation
+
+        Returns: [] A list of seats reserved
+
+        """
+        available_seats = self.get_available_seats()
+        seats_list = self._find_available_seats_to_assign(available_seats, num_seats)
         if seats_list:
             return self._book(seats_list)
-        logging.info("No seats found for {} seats of requestid {} ".format(str(num_seats), txn_id))
+        logging.error("No seats found for {} seats of requestid {} - Current available seats {} ".format(str(num_seats),
+                                                                                                         str(txn_id),
+                                                                                                         str(
+                                                                                                             available_seats.get_total_size())))
         return seats_list
 
     def _book(self, seats_list, status=SeatStatus.BOOKED):
@@ -253,16 +307,20 @@ if __name__ == "__main__":
     import random
 
     f = open("Debug.txt.1", "w")
-    for i in range(1, 500):
-        # num_seats = 4 if i <= 20 else random.randint(1,6)
-        num_seats = random.randint(1, 30)
-        print("Seats requested {}".format(str(num_seats)))
-        f.write("\n\nSeats Request - " + str(num_seats))
-        f.write("\nSeats total - " + str(scr.get_total_seats_count()))
-        f.write("\nSeats total - " + str(scr.get_unavailable_seats().get_total_size()))
-        bs = scr.book(num_seats=num_seats)
-        f.write("\nSeats Available - " + str(scr.get_available_seats_count()))
-        f.write("\nSeats Assigned - " + str(bs))
-        print("\t".join([str(item) for item in bs]))
-        print("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
+    for i in range(1, 2):
+        for i in range(1, 800):
+            # num_seats = 4 if i <= 20 else random.randint(1,6)
+            num_seats = random.randint(1, 30)
+            print("Seats requested {}".format(str(num_seats)))
+            f.write("\n\nSeats Request - " + str(num_seats))
+            f.write("\nSeats total - " + str(scr.get_total_seats_count()))
+            f.write("\nSeats total - " + str(scr.get_unavailable_seats().get_total_size()))
+            bs = scr.book(num_seats=num_seats)
+            f.write("\nSeats Available - " + str(scr.get_available_seats_count()))
+            f.write("\nSeats Assigned - " + str(bs))
+            print("\t".join([str(item) for item in bs]))
+            print("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
+            logging.error("Error log")
+            logging.info("info log")
+            logging.debug("debug log")
     print("Time taken :  {}".format(str((time.time() - ti))))
