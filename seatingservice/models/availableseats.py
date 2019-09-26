@@ -1,5 +1,5 @@
-from models.unassignedseats import NASeats
+from models.unassignedseats import UnavailableSeats
 
 
-class AvailableSeats(NASeats):
+class AvailableSeats(UnavailableSeats):
     pass

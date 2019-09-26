@@ -1,7 +1,7 @@
 from models.seatorderdict import SeatOrderDict
 
 
-class NASeats(SeatOrderDict):
+class UnavailableSeats(SeatOrderDict):
 
     def __setitem__(self, key, value):
         if not isinstance(value, set):

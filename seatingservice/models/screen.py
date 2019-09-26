@@ -7,7 +7,7 @@ from utils import numpy_fillna
 
 from models.availableseats import AvailableSeats
 from models.seatsrow import SeatsRow
-from models.unassignedseats import NASeats
+from models.unassignedseats import UnavailableSeats
 from models.screenlayout import ScreenLayout
 from models.seat import VanillaSeat
 import logging
@@ -17,10 +17,10 @@ class Screen(object):
     def __init__(self, layout_config, name="default"):
         self._name = name
         self._layout = ScreenLayout()
-        self._unavailable_seats = NASeats()
+        self._unavailable_seats = UnavailableSeats()
         seats_conf = layout_config.get(self._name).get("seats_matrix")
         self._init_layout(seats_conf)
-        self._init_seats_unavailable(seats_conf)
+        self._init_unavailable_seats(seats_conf)
         self._total_seats_count = self.get_layout().get_total_size()
 
     def _init_layout(self, layout_config):
@@ -39,12 +39,12 @@ class Screen(object):
             seats_row.add_seat(col, new_seat)
         return seats_row
 
-    def _init_seats_unavailable(self, layout_config):
+    def _init_unavailable_seats(self, layout_config):
 
         for row_config in reversed(layout_config):
             row_name = row_config.get("name")
-            empty_row = self._create_na_row(row_config)
-            self.get_unavailable_seats().add_row(row_name, empty_row)
+            available_row = self._create_na_row(row_config)
+            self.get_unavailable_seats().add_row(row_name, available_row)
         return
 
     def get_unavailable_seats(self):
@@ -68,10 +68,10 @@ class Screen(object):
         return set()
 
     def find_best_seats(self, num_of_seats):
-        empty_seats = self.get_empty_seats()
-        return empty_seats
+        available_seats = self.get_available_seats()
+        return available_seats
 
-    def get_empty_seats(self):
+    def get_available_seats(self):
         """
 
         Returns:
@@ -79,11 +79,11 @@ class Screen(object):
         """
         # This is like a DB query, So filtering based on criteria has to be done
 
-        empty_seats = AvailableSeats()
+        available_seats = AvailableSeats()
         for row, row_seats in self.get_layout().items():
-            row_of_empty_seats = row_seats.keys() - self.get_unavailable_seats().get_row(row)
-            empty_seats.add_row(row, row_of_empty_seats)
-        return empty_seats
+            row_of_available_seats = row_seats.keys() - self.get_unavailable_seats().get_row(row)
+            available_seats.add_row(row, row_of_available_seats)
+        return available_seats
 
     def get_string_hash(self, numpy_arr):
         """
@@ -96,21 +96,21 @@ class Screen(object):
         """
         return "".join([str(int(item)) for item in numpy_arr])
 
-    def _get_consecutive_seats(self, empty_seats, num_of_seats):
+    def _get_consecutive_seats(self, available_seats, num_of_seats):
         """
-        Searches for consecutive seats among empty/vacant seats
+        Searches for consecutive seats among available/vacant seats
         Args:
-            empty_seats: AvailableSeats object that contains -> Row hashed Entries
+            available_seats: AvailableSeats object that contains -> Row hashed Entries
             num_of_seats: number of seats to find
 
-        Returns:  [] - An empty or  list containing Seat PKs/ names if found
+        Returns:  [] - An available or  list containing Seat PKs/ names if found
 
         """
 
         consecutive_string = "".join(["1"] * num_of_seats)
         consecutive_re = re.compile(consecutive_string)
-        for row, rowdata in empty_seats.items():
-            boolarray = self.get_numpy_arr_wth_row_empty_indicators(row, rowdata)
+        for row, rowdata in available_seats.items():
+            boolarray = self.get_numpy_arr_wth_row_available_indicators(row, rowdata)
             if boolarray.sum() >= num_of_seats:
                 row_hash = self.get_string_hash(boolarray)
                 results = list(consecutive_re.finditer(row_hash))
@@ -133,51 +133,51 @@ class Screen(object):
         return [VanillaSeat.get_seat_name(row, col + 1) for col in
                 range(res_match.span()[0], res_match.span()[1])]
 
-    def find_nonconsecutive_empty_seats1(self, empty_seats, num_of_seats):
-        empty_seats_arr = self.get_empty_seats_array(empty_seats)
-        rows_sum = empty_seats_arr.sum(axis=1)
+    def find_nonconsecutive_available_seats1(self, available_seats, num_of_seats):
+        available_seats_arr = self.get_available_seats_array(available_seats)
+        rows_sum = available_seats_arr.sum(axis=1)
         if np.sum(rows_sum) < num_of_seats:
             print("Cannot assign seats ")
             return []
         elif np.max(rows_sum) >= num_of_seats:
             row_indx = np.argmax(rows_sum >= num_of_seats)
-            col_indices = (np.where(empty_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
+            col_indices = (np.where(available_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
             print("DEBUG Assigning in a single row {}".format((str(num_of_seats))))
-            return [VanillaSeat.get_seat_name(list(empty_seats)[row_indx], col_indx + 1) for col_indx in col_indices]
+            return [VanillaSeat.get_seat_name(list(available_seats)[row_indx], col_indx + 1) for col_indx in col_indices]
         else:
             print("DEBUG Cannot assign in a single row {}".format((str(num_of_seats))))
-            row_indexes, col_indices = np.where(empty_seats_arr == 1)
-            return [VanillaSeat.get_seat_name(list(empty_seats)[row_indexes[cnt]], col_indices[cnt]) for cnt, item
+            row_indexes, col_indices = np.where(available_seats_arr == 1)
+            return [VanillaSeat.get_seat_name(list(available_seats)[row_indexes[cnt]], col_indices[cnt]) for cnt, item
                     in enumerate(col_indices)][
                    :num_of_seats]
 
-    def find_nonconsecutive_empty_seats(self, empty_seats, num_of_seats):
-        empty_seats_arr = np.array(
-            [np.array(self.get_numpy_arr_wth_row_empty_indicators(row, item)) for row, item in empty_seats.items()])
-        print(empty_seats_arr)
-        empty_seats_arr = numpy_fillna(empty_seats_arr)
-        print(empty_seats_arr)
-        rows_sum = empty_seats_arr.sum(axis=1)
+    def find_nonconsecutive_available_seats(self, available_seats, num_of_seats):
+        available_seats_arr = np.array(
+            [np.array(self.get_numpy_arr_wth_row_available_indicators(row, item)) for row, item in available_seats.items()])
+        print(available_seats_arr)
+        available_seats_arr = numpy_fillna(available_seats_arr)
+        print(available_seats_arr)
+        rows_sum = available_seats_arr.sum(axis=1)
         if np.sum(rows_sum) < num_of_seats:
             print("Cannot assign seats ")
             return []
         if np.max(rows_sum) >= num_of_seats:
-            return self.get_seats_from_same_row(empty_seats, empty_seats_arr, num_of_seats, rows_sum)
+            return self.get_seats_from_same_row(available_seats, available_seats_arr, num_of_seats, rows_sum)
 
         # DEFAULT CASE GREEDY ASSIGNMENT
         logging.info("DEBUG Cannot assign in a single row {}".format((str(num_of_seats))))
-        return self._get_seats_from_different_rows(empty_seats, num_of_seats)
+        return self._get_seats_from_different_rows(available_seats, num_of_seats)
 
-    def get_seats_from_same_row(self, empty_seats, empty_seats_arr, num_of_seats, rows_sum):
+    def get_seats_from_same_row(self, available_seats, available_seats_arr, num_of_seats, rows_sum):
         row_indx = np.argmax(rows_sum >= num_of_seats)
-        col_indices = (np.where(empty_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
+        col_indices = (np.where(available_seats_arr[row_indx] == 1)[0]).tolist()[:num_of_seats]
         print("DEBUG Assigning in a single row {}".format((str(num_of_seats))))
-        return [VanillaSeat.get_seat_name(list(empty_seats.keys())[row_indx], int(col) + 1) for col in
+        return [VanillaSeat.get_seat_name(list(available_seats.keys())[row_indx], int(col) + 1) for col in
                 col_indices]  # [s.get_seats()[row_indx][col_indx] for col_indx in col_indices]
 
-    def _get_seats_from_different_rows(self, empty_seats, num_seats):
+    def _get_seats_from_different_rows(self, available_seats, num_seats):
         found_seats = []
-        for row, row_data in empty_seats.items():
+        for row, row_data in available_seats.items():
             if len(found_seats) >= num_seats:
                 break
             if len(row_data) != 0:
@@ -186,26 +186,26 @@ class Screen(object):
                 logging.debug(found_seats)
         return found_seats[:num_seats]
 
-    def get_numpy_arr_wth_row_empty_indicators(self, row, empty_seats_row):
+    def get_numpy_arr_wth_row_available_indicators(self, row, available_seats_row):
         """
-        Creates a numpy array representation with 1 indicating empty seats in row
+        Creates a numpy array representation with 1 indicating available seats in row
         for faster computations
         Args:
-            empty_seats_row: Set containing the seats numbers which are empty
+            available_seats_row: Set containing the seats numbers which are available
 
         Returns: 1D numpy array
 
         """
         zeros_arr = np.zeros(len(self.get_layout().get_row(row)) + 1)
-        zeros_arr[list(empty_seats_row)] = 1
+        zeros_arr[list(available_seats_row)] = 1
         zeros_arr = zeros_arr[1:]
         return zeros_arr
 
     def get_seats_to_assign(self, num_seats):
-        empty_seats = self.get_empty_seats()
-        consecutive_seats = self._get_consecutive_seats(empty_seats, num_seats)
+        available_seats = self.get_available_seats()
+        consecutive_seats = self._get_consecutive_seats(available_seats, num_seats)
         if not consecutive_seats:
-            consecutive_seats = self.find_nonconsecutive_empty_seats(empty_seats, num_seats)
+            consecutive_seats = self.find_nonconsecutive_available_seats(available_seats, num_seats)
         if not consecutive_seats:
             print("Not able to assign this time")
         return consecutive_seats
@@ -221,12 +221,12 @@ class Screen(object):
             self.get_unavailable_seats().add(seat)
         return seats_list
 
-    def get_empty_seats_array(self, empty_seats):
+    def get_available_seats_array(self, available_seats):
         arr_holder = []
-        for row, row_data in empty_seats.items():
-            empty_indicator = np.zeros(len(self.get_layout().get_row(row)) + 1)
-            empty_indicator[list(row_data)] = 1
-            arr_holder.append(empty_indicator[1:])
+        for row, row_data in available_seats.items():
+            available_indicator = np.zeros(len(self.get_layout().get_row(row)) + 1)
+            available_indicator[list(row_data)] = 1
+            arr_holder.append(available_indicator[1:])
         return numpy_fillna(np.array(arr_holder))
 
 
@@ -236,8 +236,8 @@ if __name__ == "__main__":
     ti = time.time()
     conf = Config.get_data_map().get("theatre")
     scr = Screen(conf)
-    es = scr.get_empty_seats()
-    resp = scr.get_empty_seats_array(es)
+    es = scr.get_available_seats()
+    resp = scr.get_available_seats_array(es)
     print(resp)
     print("""################3\n\n\n""")
     import random
@@ -254,5 +254,5 @@ if __name__ == "__main__":
         f.write("\nSeats Available - " + str(scr.get_available_seats_count()))
         f.write("\nSeats Assigned - " + str(bs))
         print("\t".join([str(item) for item in bs]))
-        print("Empty seats count {}\n##########\n".format(scr.get_available_seats_count()))
+        print("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
     print("Time taken :  {}".format(str((time.time()- ti))))
