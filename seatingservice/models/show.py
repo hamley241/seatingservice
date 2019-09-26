@@ -1,6 +1,6 @@
 from utils.config import Config
 from copy import deepcopy
-from models.seat import Seat
+from models.seatv0 import Seat
 import re
 import statistics
 import numpy as np

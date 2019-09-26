@@ -9,3 +9,16 @@ def memoize(f):
         print(str(y))
         return memo[str(y)]
     return helper
+
+import numpy as np
+def numpy_fillna(data):
+    # Get lengths of each row of data
+    lens = np.array([len(i) for i in data])
+
+    # Mask of valid places in each row
+    mask = np.arange(lens.max()) < lens[:,None]
+
+    # Setup output array and put elements from data into masked positions
+    out = np.zeros(mask.shape, dtype=data.dtype)
+    out[mask] = np.concatenate(data)
+    return out

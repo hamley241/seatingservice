@@ -1,0 +1,2 @@
+class SeatNotFoundException(Exception):
+    pass

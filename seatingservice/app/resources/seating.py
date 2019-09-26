@@ -2,9 +2,11 @@ import logging
 import time
 import app.views as views
 from models.show import Show
-
+from models.screen import Screen
+from utils.config import  Config
 class Seats(object):
-    _show = Show()
+    # _show = Show()
+    _show = Screen(Config.get_data_map().get("theatre"))
 
     @classmethod
     def post(cls, request_params):
@@ -18,7 +20,8 @@ class Seats(object):
         ## Call models to assign actual seats
         try:
             assigned_seats = cls._show.book(txn_id=txn_id, num_seats=no_seats)
-            response_body = "{} {}".format(txn_id, " ".join([seat.get_name() for seat in assigned_seats]))
+            # response_body = "{} {}".format(txn_id, " ".join([seat.get_name() for seat in assigned_seats]))
+            response_body = "{} {}".format(txn_id, " ".join(assigned_seats))
             return views.get_success_response(dict(body=response_body))
         except Exception  as e:
             print(e.with_traceback())
