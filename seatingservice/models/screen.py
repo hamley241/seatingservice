@@ -392,14 +392,13 @@ if __name__ == "__main__":
     import random
 
     f = open("Debug.txt.1", "w")
-    for i in range(1, 2):
-        for i in range(1, 800):
-            num_seats = random.randint(1, 30)
-            print("Seats requested {}".format(str(num_seats)))
-            bs = scr.book(num_seats=num_seats)
-            logging.info("\t".join([str(item) for item in bs]))
-            logging.info("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
-            logging.error("Error log")
-            logging.info("info log")
-            logging.debug("debug log")
+    for i in range(1, 800):
+        num_seats = random.randint(1, 30)
+        print("Seats requested {}".format(str(num_seats)))
+        bs = scr.book(num_seats=num_seats)
+        logging.info("\t".join([str(item) for item in bs]))
+        logging.info("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
+        logging.error("Error log")
+        logging.info("info log")
+        logging.debug("debug log")
     logging.info("Time taken :  {}".format(str((time.time() - ti))))
