@@ -3,6 +3,7 @@ import os
 from app.controllers import Seats
 from events.eventprocessor import SeatAssigner
 from utils.logs import Logger
+import utils
 
 logging = Logger.get_logger()
 
@@ -20,7 +21,7 @@ if __name__ == "__main__":
 
     inputfile = sys.argv[1]
     requests_file = open(inputfile, "r")
-    response_file_name = "responses.txt"
+    response_file_name = "response.txt" #"{}-out.txt".format(utils.path_leaf(inputfile))
     response_file = open(response_file_name, "w")
     seats_assigninig_service = Seats()
     seat_assigner = SeatAssigner(seats_assigninig_service, requests_file, response_file)    # Initialising the seat assigner

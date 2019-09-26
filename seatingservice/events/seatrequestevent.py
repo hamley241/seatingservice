@@ -1,5 +1,5 @@
 from events.exceptions import InvalidEventException
-from utils import validate_int
+from utils import validate_positive_int
 from utils.logs import Logger
 
 logging = Logger.get_logger(__name__)
@@ -51,9 +51,9 @@ class SeatRequestEvent:
 
         txn_id = data[0]
         try:
-            seats_count = validate_int(data[1])
+            seats_count = validate_positive_int(data[1])
         except Exception as e:
-            logging.debug("Seats count is not int, event is {}".format(event))
+            logging.debug("Seats count is not a positive int, event is {}".format(event))
             raise InvalidEventException
 
         if not txn_id.startswith("R"):
@@ -61,7 +61,7 @@ class SeatRequestEvent:
             raise InvalidEventException()
 
         try:
-            validate_int(txn_id[1:])
+            validate_positive_int(txn_id[1:])
         except Exception as e:
             logging.debug("Issue with TransactionID event is {}".format(event))
             raise InvalidEventException()

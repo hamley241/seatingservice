@@ -1,5 +1,5 @@
 import numpy as np
-
+import ntpath
 
 def memoize(f):
     memo = {}
@@ -33,3 +33,14 @@ def validate_int(input):
         return int(input)
     except Exception as e:
         raise e
+
+def validate_positive_int(input):
+    pos_int = validate_int(input)
+    if pos_int <= 0:
+        raise ValueError("Not a positive int {}".format(str(input)))
+    return pos_int
+
+
+def path_leaf(path):
+    head, tail = ntpath.split(path)
+    return tail or ntpath.basename(head)

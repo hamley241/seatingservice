@@ -154,8 +154,9 @@ class Screen(object):
 
         """
 
-        consecutive_string = "".join(["1"] * num_of_seats)
-        consecutive_re = re.compile(consecutive_string)
+        consecutive_string = r"(?="+"".join(["1"] * num_of_seats)+")"
+        # consecutive_re = re.compile(consecutive_string)
+        consecutive_re = re.compile(r"(?="+consecutive_string+")")
         available_seats_indicator_arr = self.get_available_seats_indicator_array(available_seats)
         for cnt, (row, rowdata) in enumerate(available_seats.items()):
             # available_seats_indicator_arr = self.get_numpy_arr_wth_row_available_indicators(row, rowdata)
@@ -163,10 +164,10 @@ class Screen(object):
                 row_hash = self._get_string_hash(available_seats_indicator_arr[cnt])
                 results = list(consecutive_re.finditer(row_hash))
                 if results:
-                    return self._find_centered_consecutive(results, row)
+                    return self._find_centered_consecutive(results, row, num_of_seats)
         return []
 
-    def _find_centered_consecutive(self, consecutive_search_results, row):
+    def _find_centered_consecutive(self, consecutive_search_results, row, num_seats):
         """
         Finds the seats close to center of screen
         Args:
@@ -180,7 +181,7 @@ class Screen(object):
         smallest_mean_diff = sys.maxsize
         best_search_result = None
         for search_result in consecutive_search_results:
-            res_mean = statistics.mean(search_result.span())
+            res_mean = statistics.mean([search_result.span()[0], search_result.span()[0]+num_seats])
             distance_between_means = abs(res_mean - best_position)
             if distance_between_means < smallest_mean_diff:
                 best_search_result = search_result
@@ -188,7 +189,7 @@ class Screen(object):
         logging.debug(
             "Found consecutive search results for {} seats in Row {}".format(str(best_search_result.span()), str(row)))
         return [Seat.get_seat_name(row, col + 1) for col in
-                range(best_search_result.span()[0], best_search_result.span()[1])]
+                range(best_search_result.span()[0], best_search_result.span()[0]+num_seats)]
 
     def _get_best_seat_position(self, row):
         """
@@ -331,7 +332,7 @@ class Screen(object):
 
         """
         try:
-            num_seats = utils.validate_int(num_seats)
+            num_seats = utils.validate_positive_int(num_seats)
         except Exception as e:
             raise ValueError()
         available_seats = self._get_available_seats()
@@ -357,7 +358,7 @@ class Screen(object):
         """
         for seat in seats_list:
             if self.get_unavailable_seats().has(seat):
-                print("isue")
+                raise Exception()
             self.get_unavailable_seats().add(seat)
         return seats_list
 
@@ -391,14 +392,14 @@ if __name__ == "__main__":
     print("""################3\n\n\n""")
     import random
 
-    f = open("Debug.txt.1", "w")
-    for i in range(1, 800):
-        num_seats = random.randint(1, 30)
+    # f = open("Debug.txt.1", "w")
+    for i in range(1, 55):
+        num_seats = random.randint(1, 10)
         print("Seats requested {}".format(str(num_seats)))
         bs = scr.book(num_seats=num_seats)
-        logging.info("\t".join([str(item) for item in bs]))
+        # logging.info("\t".join([str(item) for item in bs]))
         logging.info("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
-        logging.error("Error log")
-        logging.info("info log")
-        logging.debug("debug log")
+        es = scr._get_available_seats()
+        resp = scr.get_available_seats_indicator_array(es)
+        # print(resp)
     logging.info("Time taken :  {}".format(str((time.time() - ti))))

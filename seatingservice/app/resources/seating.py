@@ -20,7 +20,7 @@ class Seats(object):
         if txn_id is None or no_seats is None:
             return views.get_bad_request_response(Seats._get_response_body(txn_id))  # 400 response
         try:
-            no_seats = utils.validate_int(no_seats)
+            no_seats = utils.validate_positive_int(no_seats)
         except ValueError as e:
             logging.error("Cleint Error {}".format(str(request_params)))
             return views.get_bad_request_response(Seats._get_response_body(txn_id))
