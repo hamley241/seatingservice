@@ -21,7 +21,7 @@ class SeatAssigner:
                 response = self.assign_service.post(request_params=event_obj.to_dict())
                 print(response)
                 if response.get("status") == "success":
-                    response_string = " ".join(response.get("seats"))
+                    response_string = ",".join(response.get("seats"))
                     self.event_producer.write("{} {}\n".format(event_obj.get_txn_id(), response_string))
                     logging.info("Assigned Seats {} {}".format(str(event_obj.get_txn_id()), response.get("body")))
                 else:
