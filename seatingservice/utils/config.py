@@ -13,8 +13,8 @@ class Config:
         file_name = "config.yaml"
         input_file = os.path.dirname(os.path.realpath(__file__))+"/../config/" + file_name
         if not Config.__data_map:
-            logging.error("loaded config file")
-            logging.error(input_file)
+            logging.info("loaded config file")
+            logging.info(input_file)
             Config.__data_map = Config.__ordered_load(open(input_file), yaml.SafeLoader)
         return Config.__data_map
 
@@ -37,4 +37,3 @@ class Config:
 
 if __name__ == "__main__":
     cfg = Config().get_data_map()
-    # print(cfg.get("theatre").get("default").get("seats_matrix")[0].get("name"))

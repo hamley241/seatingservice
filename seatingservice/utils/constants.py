@@ -1,5 +1,18 @@
 from enum import Enum
 
+class SeatsRequest:
+    TXN_ID = "txnId"
+    NUM_SEATS = "seatsCount"
+    SEATS = "seats"
+
+
+
+class ResponseStatusCode(Enum):
+    SUCCESS = 200
+    CREATED = 201
+    BAD_REQUEST = 400
+    INTERNAL_ERROR = 500
+
 class SeatStatus(Enum):
     BOOKED = 1
     NOT_BOOKED = 0

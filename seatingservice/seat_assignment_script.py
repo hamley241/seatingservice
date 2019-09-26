@@ -5,6 +5,7 @@ import argparse
 
 import datetime
 from utils.logs import Logger
+import utils
 
 logging = Logger.get_logger()
 
@@ -31,24 +32,29 @@ class SeatRequestEvent:
 
 class SeatAssigner:
 
-    def __init__(self, seats_asssginig_service, event_consumer, event_producer):
-        self.assign_service = seats_asssginig_service
+    def __init__(self, seats_assigninig_service, event_consumer, event_producer):
+        self.assign_service = seats_assigninig_service
         self.consumer = event_consumer  # can have a wrapped consumer to be always in consistent with what is expected
         self.event_producer = event_producer
 
     def process(self):
         for event in self.consumer:
             try:
-                logging.info(" {} Received Event {}".format(datetime.datetime.utcnow(), str(event)))
-                event = self.validate_event(event)
-                response = self.assign_service.post(request_params=event.to_dict())
+                logging.info("Received Event {}".format(str(event)))
+                event_obj = self.validate_event(event)
+                response = self.assign_service.post(request_params=event_obj.to_dict())
+                print(response)
                 if response.get("status") == "success":
-                    self.event_producer.write("{}\n".format(response.get("body")))
+                    response_string = " ".join(response.get("seats"))
+                    self.event_producer.write("{} {}\n".format(event_obj.get_txn_id(), response_string))
+                    logging.info("Assigned Seats {} {}".format(str(event_obj.get_txn_id()), response.get("body")))
                 else:
-                    logging.error("No seat was assigned to request event {}".format(event.to_dict()))
+                    logging.error("Could not assign to request event_obj {}".format(event_obj.to_dict()))
+                    self.event_producer.write("{}\n".format(event_obj.get_txn_id()))
             except InvalidEventException as e:
-                logging.error("Invalid event {} exception {}".format(str(event).strip("\n"), e))
-            print("Result")
+                """Uncomment to allow the invalid data to be written to file"""
+                # self.event_producer.write("{} {}\n".format(event.strip("\n"), "Invalid Request data"))
+                logging.error("Invalid event_obj {} exception {}".format(str(event).strip("\n"), e))
 
     def validate_event(self, event):
         if not event:
@@ -67,12 +73,17 @@ class SeatAssigner:
         if not txn_id.startswith("R"):
             raise InvalidEventException()
 
+        try:
+            utils.validate_int(txn_id[1:])
+        except Exception as e:
+            raise InvalidEventException()
+
         return SeatRequestEvent(txn_id, seats_count)
 
 
 if __name__ == "__main__":
     help_text = "seat_assignment_script.py: error: the following arguments are required: inputfile \n ex: {} inputfile.txt".format(
-                "seat_assignment_script.py")
+        "seat_assignment_script.py")
     if len(sys.argv) != 2:
         print(help_text)
         os._exit(1)

@@ -1,29 +1,45 @@
 import app.views as views
 from models.screen import Screen
 from utils.config import Config
+from utils.constants import SeatsRequest
 from utils.logs import Logger
+from models.exceptions import ClientError
+import utils
+
 logging = Logger.get_logger()
+
 
 class Seats(object):
     _show = Screen(Config.get_data_map().get("theatre"))
 
     @classmethod
     def post(cls, request_params):
-        txn_id = request_params.get("txnId")
-        no_seats = request_params.get("seatsCount")
+        txn_id = request_params.get(SeatsRequest.TXN_ID, None)
+        no_seats = request_params.get(SeatsRequest.NUM_SEATS, None)
 
-        if not txn_id or not no_seats:
-            return views.get_failed_response({"txnId": txn_id})  # 400 response
+        # Data Validation
+        if txn_id is None or no_seats is None:
+            return views.get_bad_request_response(Seats._get_response_body(txn_id))  # 400 response
+        try:
+            no_seats = utils.validate_int(no_seats)
+        except ValueError as e:
+            logging.error("Cleint Error {}".format(str(request_params)))
+            return views.get_bad_request_response(Seats._get_response_body(txn_id))
 
         ## Call models to assign actual seats
         try:
             assigned_seats = cls._show.book(txn_id=txn_id, num_seats=no_seats)
-            # response_body = "{} {}".format(txn_id, " ".join([seat.get_name() for seat in assigned_seats]))
-            response_body = "{} {}".format(txn_id, " ".join(assigned_seats))
-            return views.get_success_response(dict(body=response_body))
-        except Exception  as e:
-            print(e.with_traceback())
-            return views.get_failed_response({"txnId": txn_id})  # Internal server error
+            if not assigned_seats:
+                return views.get_failed_response(Seats._get_response_body(txn_id, assigned_seats))
+            return views.get_success_response(Seats._get_response_body(txn_id, assigned_seats))
+        except Exception as e:
+            logging.exception(e)
+            return views.get_internal_error_response(Seats._get_response_body(txn_id))  # Internal server error
+
+    @classmethod
+    def _get_response_body(cls, txn_id=None, seats=[]):
+        response_body = {"txnId": txn_id, "seats": seats}
+        return response_body
 
 
 if __name__ == '__main__':

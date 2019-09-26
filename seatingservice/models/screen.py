@@ -10,9 +10,9 @@ from models.unassignedseats import UnavailableSeats
 from models.seatslayout import SeatsLayout
 from models.seat import Seat
 from utils.logs import Logger
-
+from models.exceptions import ClientError
 logging = Logger.get_logger()
-
+import utils
 
 class Screen(object):
     """
@@ -329,6 +329,10 @@ class Screen(object):
         Returns: [] A list of seats reserved
 
         """
+        try:
+            num_seats = utils.validate_int(txn_id[1:])
+        except Exception as e:
+            raise ClientError()
         available_seats = self._get_available_seats()
         seats_list = self._find_available_seats_to_assign(available_seats, num_seats)
         if seats_list:
@@ -338,6 +342,8 @@ class Screen(object):
                                                                                                  str(
                                                                                                      available_seats.get_total_size())))
         return seats_list
+
+
 
     def _book(self, seats_list, status=SeatStatus.BOOKED):
         """
