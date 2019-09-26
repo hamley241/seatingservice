@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from models.seat import VanillaSeat
+from models.seat import Seat
 
 
 class SeatsRow(OrderedDict):
@@ -8,8 +8,8 @@ class SeatsRow(OrderedDict):
         return self.get(col_num)
 
     def __setitem__(self, key, value):
-        if not isinstance(value, VanillaSeat):
-            raise TypeError("Expecting object of type {}".format(VanillaSeat.__name__))
+        if not isinstance(value, Seat):
+            raise TypeError("Expecting object of type {}".format(Seat.__name__))
         super().__setitem__(key, value)
 
     def add_seat(self, key, value):

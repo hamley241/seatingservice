@@ -2,8 +2,10 @@ import logging
 from utils.constants import SeatType
 
 
-class VanillaSeat(object):
-
+class Seat(object):
+    """
+    A Basic seat object with its attributes, to enable creation of seats and utils around them
+    """
     def __init__(self, row, col, seats_type=SeatType.NORMAL, metadata={}):
         self._row = self.validate_row(row)
         self._col = self.validate_col(col)
