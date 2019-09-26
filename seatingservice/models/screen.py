@@ -17,6 +17,10 @@ logging = Logger.get_logger()
 
 
 class Screen(object):
+    """
+    A screen in theatre, it HAS seats layout, HAS UnavailableSeats (currenlty supports booked type)
+    Like an ORM object
+    """
 
     def __init__(self, layout_config, name="default"):
         self._name = name
@@ -234,6 +238,15 @@ class Screen(object):
         return sum(rows_sum) >= num_of_seats
 
     def _can_find_available_in_same_row(self, row_wise_sum, num_of_seats):
+        """
+        Checks if screen has enough available seats in single row to accomodate
+        Args:
+            row_wise_sum: list /numpy array containing row wise available seats sum
+            num_of_seats: number of available seats to find
+
+        Returns: bool, True if required number of seats are available in same row else False
+
+        """
         return max(row_wise_sum) >= num_of_seats
 
     def _find_seats_from_same_row(self, available_seats, available_seats_arr, num_of_seats, rows_sum):
@@ -290,13 +303,22 @@ class Screen(object):
         return zeros_arr
 
     def _find_available_seats_to_assign(self, available_seats, num_seats):
+        """
+        Finds the required number of seats from availanble seats
+        Args:
+            available_seats: AvailableSeats obj containing available seats info
+            num_seats: Number of seats to search for
+
+        Returns: [], list of available seats
+
+        """
         consecutive_seats = self._find_consecutive_seats(available_seats, num_seats)
         if consecutive_seats:
             return consecutive_seats
         non_consecutive_seats = self._find_nonconsecutive_available_seats(available_seats, num_seats)
         if non_consecutive_seats:
             return non_consecutive_seats
-        logging.info("No seats found for ")
+        logging.debug("No seats found for request of {} seats ".format(str(num_seats)))
         return consecutive_seats
 
     def book(self, num_seats, txn_id=None):
@@ -313,10 +335,10 @@ class Screen(object):
         seats_list = self._find_available_seats_to_assign(available_seats, num_seats)
         if seats_list:
             return self._book(seats_list)
-        logging.error("No seats found for {} seats of requestid {} - Current available seats {} ".format(str(num_seats),
-                                                                                                         str(txn_id),
-                                                                                                         str(
-                                                                                                             available_seats.get_total_size())))
+        logging.error("No seats found for request {} of {} - Current available seats {} ".format(str(num_seats),
+                                                                                                 str(txn_id),
+                                                                                                 str(
+                                                                                                     available_seats.get_total_size())))
         return seats_list
 
     def _book(self, seats_list, status=SeatStatus.BOOKED):
@@ -327,7 +349,7 @@ class Screen(object):
             seats_list: List of seats with PKs/seat identifiers
             status: Returns list of seats marked
 
-        Returns:
+        Returns: []. list of seats booked
 
         """
         for seat in seats_list:
