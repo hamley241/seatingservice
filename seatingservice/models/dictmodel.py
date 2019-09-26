@@ -136,11 +136,9 @@ class SeatsRow1(OrderedDict):
         data_dict[self.row] = self._serialize_value()
         return True
 
-
     def _serialize_value(self):
         return {STATUS: self._status, SEAT_TYPE: self._seat_type}
 
     @classmethod
     def _deserialize(cls, obj_data):
         pass
-

@@ -31,14 +31,3 @@ theatre:
       - name: J
         count: 10
         seat_type: normal
-
-
-#      - B: 10
-#      - C: 10
-#      - D: 10
-#      - E: 10
-#      - F: 10
-#      - G: 10
-#      - H: 10
-#      - I: 10
-#      - J: 10

@@ -11,6 +11,7 @@ from models.unassignedseats import NASeats
 from models.screenlayout import ScreenLayout
 from models.seat import VanillaSeat
 
+
 class Screen(object):
 
     def __init__(self, layout_config, name="default"):

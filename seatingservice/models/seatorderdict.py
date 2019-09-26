@@ -1,6 +1,7 @@
 from collections import OrderedDict
 import re
 
+
 class SeatOrderDict(OrderedDict):
     """
     Base DataStructure that will server as Datastore/DB for the Project

@@ -1,10 +1,11 @@
 from models.seatorderdict import SeatOrderDict
 
+
 class NASeats(SeatOrderDict):
 
     def __setitem__(self, key, value):
         if not isinstance(value, set):
-            raise  TypeError("Expecting object of type {}".format(set.__name__))
+            raise TypeError("Expecting object of type {}".format(set.__name__))
         super().__setitem__(key, value)
 
     def add_row(self, key, seats_row):
@@ -14,7 +15,7 @@ class NASeats(SeatOrderDict):
 
     def has(self, seat_number):
         row_num, col_num = self._get_row_col_numbers(seat_number)
-        seat_obj =  col_num in self.get(row_num,{})
+        seat_obj = col_num in self.get(row_num, {})
         if not seat_obj:
             return False
         return True

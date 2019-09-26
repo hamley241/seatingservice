@@ -1,6 +1,7 @@
 from collections import OrderedDict
 from models.seat import VanillaSeat
 
+
 class SeatsRow(OrderedDict):
 
     def find(self, col_num):
@@ -12,7 +13,7 @@ class SeatsRow(OrderedDict):
         super().__setitem__(key, value)
 
     def add_seat(self, key, value):
-        self.__setitem__(key,value)
+        self.__setitem__(key, value)
 
     def __str__(self):
         return " ".join([str(seat) for seat_col, seat in self.items()])
