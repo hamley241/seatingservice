@@ -3,7 +3,7 @@ from models.exceptions import SeatNotFoundException
 from models.seatsrow import SeatsRow
 
 
-class ScreenLayout(SeatOrderDict):
+class SeatsLayout(SeatOrderDict):
 
     def add_row(self, key, seats_row):
         if not isinstance(seats_row, SeatsRow):

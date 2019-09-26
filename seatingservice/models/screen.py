@@ -8,7 +8,7 @@ from utils import numpy_fillna
 from models.availableseats import AvailableSeats
 from models.seatsrow import SeatsRow
 from models.unassignedseats import UnavailableSeats
-from models.screenlayout import ScreenLayout
+from models.seatslayout import SeatsLayout
 from models.seat import VanillaSeat
 import logging
 
@@ -16,7 +16,7 @@ class Screen(object):
 
     def __init__(self, layout_config, name="default"):
         self._name = name
-        self._layout = ScreenLayout()
+        self._layout = SeatsLayout()
         self._unavailable_seats = UnavailableSeats()
         seats_conf = layout_config.get(self._name).get("seats_matrix")
         self._init_layout(seats_conf)
@@ -43,15 +43,12 @@ class Screen(object):
 
         for row_config in reversed(layout_config):
             row_name = row_config.get("name")
-            available_row = self._create_na_row(row_config)
+            available_row = self._create_unavailable_row(row_config)
             self.get_unavailable_seats().add_row(row_name, available_row)
         return
 
     def get_unavailable_seats(self):
         return self._unavailable_seats
-
-    def get_available_seats(self):
-        pass  # return self.get_total_seats_count() - self.get_unavailable_seats().get_total_size()
 
     def get_total_seats_count(self):
         return self._total_seats_count
@@ -64,7 +61,7 @@ class Screen(object):
     def get_layout(self):
         return self._layout
 
-    def _create_na_row(self, row_config):
+    def _create_unavailable_row(self, row_config):
         return set()
 
     def find_best_seats(self, num_of_seats):
