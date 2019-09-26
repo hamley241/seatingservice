@@ -1,9 +1,9 @@
 import logging
-import time
 import app.views as views
-from models.show import Show
 from models.screen import Screen
-from utils.config import  Config
+from utils.config import Config
+
+
 class Seats(object):
     # _show = Show()
     _show = Screen(Config.get_data_map().get("theatre"))
@@ -11,11 +11,10 @@ class Seats(object):
     @classmethod
     def post(cls, request_params):
         txn_id = request_params.get("txnId")
-        no_seats =  request_params.get("seatsCount")
+        no_seats = request_params.get("seatsCount")
 
         if not txn_id or not no_seats:
-
-            return views.get_failed_response({"txnId":txn_id}) #400 response
+            return views.get_failed_response({"txnId": txn_id})  # 400 response
 
         ## Call models to assign actual seats
         try:
@@ -25,9 +24,8 @@ class Seats(object):
             return views.get_success_response(dict(body=response_body))
         except Exception  as e:
             print(e.with_traceback())
-            return views.get_failed_response({"txnId":txn_id}) #Interal server error
-
+            return views.get_failed_response({"txnId": txn_id})  # Internal server error
 
 
 if __name__ == '__main__':
-    print(Seats.post(request_params={"txnId":"RX123", "seatsCount":3}))
+    print(Seats.post(request_params={"txnId": "RX123", "seatsCount": 3}))
