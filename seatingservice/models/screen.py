@@ -28,6 +28,14 @@ class Screen(object):
         self._total_seats_count = self.get_layout().get_total_size()
 
     def _init_layout(self, layout_config):
+        """
+        initializes the layout of seats in form of SeatsLayout obj  which can be referred for geometry
+        Args:
+            layout_config: A list containing the dicts with details layout
+
+        Returns: None
+
+        """
         for cnt, row_config in enumerate(reversed(layout_config)):
             row_name = row_config.get("name")
             row_seats = self._create_row_seats(row_config)
@@ -35,6 +43,14 @@ class Screen(object):
         return
 
     def _create_row_seats(self, row_config):
+        """
+        Creates row of seats in form os SeatsRow from row config of seats
+        Args:
+            row_config: Dict,  row config of seats
+
+        Returns: SeatsRow obj
+
+        """
         seats_row = SeatsRow()
         row_name = row_config["name"]
         number_of_seats = row_config["count"]
@@ -44,6 +60,14 @@ class Screen(object):
         return seats_row
 
     def _init_unavailable_seats(self, layout_config):
+        """
+        Initializes the UnavailableSeats obj which is like a datastore to store the unavailable objects
+        Args:
+            layout_config: config of seats layout
+
+        Returns: None
+
+        """
 
         for row_config in reversed(layout_config):
             row_name = row_config.get("name")
@@ -52,12 +76,27 @@ class Screen(object):
         return
 
     def get_unavailable_seats(self):
+        """
+        Getter method for unavailable objects
+        Returns: Return unavailabe seats attribute of self
+
+        """
         return self._unavailable_seats
 
     def get_total_seats_count(self):
+        """
+
+        Returns: int, total number of seats in in seatsLayout => screen
+
+        """
         return self._total_seats_count
 
     def get_available_seats_count(self):
+        """
+
+        Returns: int, returns total number of available seats
+
+        """
         print("Total seats {} Available seats {}".format(str(self.get_total_seats_count()),
                                                          str(self.get_unavailable_seats().get_total_size())))
         return self.get_total_seats_count() - self.get_unavailable_seats().get_total_size()
@@ -66,13 +105,17 @@ class Screen(object):
         return self._layout
 
     def _create_unavailable_row(self, row_config):
+        """
+        Creates row of unavailable seats in form of set from row config of seats
+        Args:
+            row_config: Dict,  row config of seats
+
+        Returns: set
+
+        """
         return set()
 
-    def find_best_seats(self, num_of_seats):
-        available_seats = self.get_available_seats()
-        return available_seats
-
-    def get_available_seats(self):
+    def _get_available_seats(self):
         """
         Filters out seats remaining ( can add criteria to filter out based on types if needed)
         Returns: AvailableSeats obj containing seats that can be used for assigning
@@ -86,7 +129,7 @@ class Screen(object):
             available_seats.add_row(row, row_of_available_seats)
         return available_seats
 
-    def get_string_hash(self, numpy_arr):
+    def _get_string_hash(self, numpy_arr):
         """
         Computes hash string for a 1D numpy array
         Args:
@@ -114,7 +157,7 @@ class Screen(object):
         for cnt, (row, rowdata) in enumerate(available_seats.items()):
             # available_seats_indicator_arr = self.get_numpy_arr_wth_row_available_indicators(row, rowdata)
             if available_seats_indicator_arr[cnt].sum() >= num_of_seats:
-                row_hash = self.get_string_hash(available_seats_indicator_arr[cnt])
+                row_hash = self._get_string_hash(available_seats_indicator_arr[cnt])
                 results = list(consecutive_re.finditer(row_hash))
                 if results:
                     return self._find_centered_consecutive(results, row)
@@ -145,6 +188,14 @@ class Screen(object):
                 range(best_search_result.span()[0], best_search_result.span()[1])]
 
     def _get_best_seat_position(self, row):
+        """
+        Find the center most position of seat in given row based on seats layout config
+        Args:
+            row: Row identifier
+
+        Returns: col, seat position in a given row
+
+        """
         best_position = len(self.get_layout().get_row(row)) // 2
         return best_position
 
@@ -171,6 +222,15 @@ class Screen(object):
         return self._find_seats_from_different_rows(available_seats, num_of_seats)
 
     def _can_find_available(self, rows_sum, num_of_seats):
+        """
+        Check if the screen has enough number of available seats to find
+        Args:
+            rows_sum: Row wise sum of each row of theatre
+            num_of_seats: int, number of seats to find
+
+        Returns: bool, indicating if the screen has enough seats
+
+        """
         return sum(rows_sum) >= num_of_seats
 
     def _can_find_available_in_same_row(self, row_wise_sum, num_of_seats):
@@ -249,7 +309,7 @@ class Screen(object):
         Returns: [] A list of seats reserved
 
         """
-        available_seats = self.get_available_seats()
+        available_seats = self._get_available_seats()
         seats_list = self._find_available_seats_to_assign(available_seats, num_seats)
         if seats_list:
             return self._book(seats_list)
@@ -300,7 +360,7 @@ if __name__ == "__main__":
     ti = time.time()
     conf = Config.get_data_map().get("theatre")
     scr = Screen(conf)
-    es = scr.get_available_seats()
+    es = scr._get_available_seats()
     resp = scr.get_available_seats_indicator_array(es)
     print(resp)
     print("""################3\n\n\n""")
