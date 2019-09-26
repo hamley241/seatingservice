@@ -1,0 +1,2 @@
+class InvalidEventException(Exception):
+    pass
