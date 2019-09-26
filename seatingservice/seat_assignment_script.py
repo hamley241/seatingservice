@@ -71,25 +71,20 @@ class SeatAssigner:
 
 
 if __name__ == "__main__":
-    # parser = argparse.ArgumentParser(prog='seat_assignment_script.py')
-    # parser.add_argument('--input', '-i', dest='inputfile', help='Complete path to Input file containing the reservation requests', required=True,action='store_true')
-    # opts= parser.parse_args()
-    # print(opts)
+    help_text = "seat_assignment_script.py: error: the following arguments are required: inputfile \n ex: {} inputfile.txt".format(
+                "seat_assignment_script.py")
     if len(sys.argv) != 2:
-        print(
-            "seat_assignment_script.py: error: the following arguments are required: inputfile \n ex: {} inputfile.txt".format(
-                "seat_assignment_script.py"))
+        print(help_text)
+        os._exit(1)
+
+    if not os.path.isfile(sys.argv[1]):
+        logging.error("Requires a file path\n{}".format(help_text))
         os._exit(1)
     inputfile = sys.argv[1]
     requests_file = open(inputfile, "r")
     response_file_name = "responses.txt"
     response_file = open(response_file_name, "w")
-    sample_event = ["R001 2", "R002 4"]
     seats_asssginig_service = Seats()
     seat_assigner = SeatAssigner(seats_asssginig_service, requests_file, response_file)
     seat_assigner.process()
     print("Responses can be found at {}".format(os.path.abspath(response_file_name)))
-    logging.info("INFO LOG")
-    logging.error("Error LOG")
-    logging.debug("Debug LOG")
-    logging.warn("warn LOG")
