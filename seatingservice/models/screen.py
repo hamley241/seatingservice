@@ -107,10 +107,11 @@ class Screen(object):
 
         consecutive_string = "".join(["1"] * num_of_seats)
         consecutive_re = re.compile(consecutive_string)
-        for row, rowdata in available_seats.items():
-            boolarray = self.get_numpy_arr_wth_row_available_indicators(row, rowdata)
-            if boolarray.sum() >= num_of_seats:
-                row_hash = self.get_string_hash(boolarray)
+        available_seats_indicator_arr = self.get_available_seats_indicator_array(available_seats)
+        for cnt, (row, rowdata) in enumerate(available_seats.items()):
+            # available_seats_indicator_arr = self.get_numpy_arr_wth_row_available_indicators(row, rowdata)
+            if available_seats_indicator_arr[cnt].sum() >= num_of_seats:
+                row_hash = self.get_string_hash(available_seats_indicator_arr[cnt])
                 results = list(consecutive_re.finditer(row_hash))
                 if results:
                     return self._find_centered_consecutive(results, row)
