@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     s = Show()
     print(s)
-    for i in range(1, 35):
+    for i in range(1, 1000):
         # num_seats = 4 if i <= 20 else random.randint(1,6)
         num_seats = random.randint(1, 6)
         print("Seats requested {}".format(str(num_seats)))
