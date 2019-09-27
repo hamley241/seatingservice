@@ -4,29 +4,29 @@ from models.seatorderdict import SeatOrderDict
 class UnavailableSeats(SeatOrderDict):
 
     def __setitem__(self, key, value):
-        if not isinstance(value, set):
-            raise TypeError("Expecting object of type {}".format(set.__name__))
+        if not isinstance(value, dict):
+            raise TypeError("Expecting object of type {}".format(dict.__name__))
         super().__setitem__(key, value)
 
     def add_row(self, key, seats_row):
-        if not isinstance(seats_row, set):
+        if not isinstance(seats_row, dict):
             raise TypeError()
         self.__setitem__(key, seats_row)
 
     def has(self, seat_number):
         row_num, col_num = self._get_row_col_numbers(seat_number)
-        seat_obj = col_num in self.get(row_num, {})
+        seat_obj = col_num in self.get(row_num, dict())
         if not seat_obj:
             return False
         return True
 
-    def add(self, complete_seat_number):
+    def add(self, complete_seat_number, txn_id=None):
         row, col = self._get_row_col_numbers(complete_seat_number)
         try:
-            self.get_row(row).add(col)
+            self.get_row(row).__setitem__(col, txn_id)
         except KeyError as e:
-            self.add_row(row, set())
-            self.get_row(row).add(col)
+            self.add_row(row, dict())
+            self.get_row(row).__setitem__(col, txn_id)
 
     def __str__(self):
         response_str = ""

@@ -128,7 +128,7 @@ class Screen(object):
         Returns: set
 
         """
-        return set()
+        return dict()
 
     def _get_available_seats(self):
         """
@@ -140,7 +140,7 @@ class Screen(object):
 
         available_seats = AvailableSeats()
         for row, row_seats in self.get_layout().items():
-            row_of_available_seats = row_seats.keys() - self.get_unavailable_seats().get_row(row)
+            row_of_available_seats = row_seats.keys() - self.get_unavailable_seats().get_row(row).keys()
             available_seats.add_row(row, row_of_available_seats)
         return available_seats
 
@@ -400,7 +400,7 @@ class Screen(object):
         for seat in seats_list:
             if self.get_unavailable_seats().has(seat):
                 raise Exception()
-            self.get_unavailable_seats().add(seat)
+            self.get_unavailable_seats().add(seat, txn_id)
         self.get_bookings().set(txn_id, seats_list)
         return seats_list
 

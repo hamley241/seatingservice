@@ -1,10 +1,10 @@
 import unittest
-from models.unassignedseats import UnavailableSeats
+from models.availableseats import AvailableSeats
 
 
-class TestUnavailableSeats(unittest.TestCase):
+class TestAvailableSeats(unittest.TestCase):
     def setUp(self):
-        self.obj = UnavailableSeats()
+        self.obj = AvailableSeats()
 
     def test_add_row(self):
         # If object is not of set type
