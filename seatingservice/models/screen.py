@@ -494,4 +494,6 @@ if __name__ == "__main__":
         print(scr.get_bookings())
         if i%10 ==0:
             logging.info(scr.get_view())
+    logging.info("Chekc if has R01 {} ".format(scr.get_unavailable_seats().get("J11")))
+    logging.info("print all values {}".format(scr.get_unavailable_seats().get_row("J").values()))
     logging.info("Time taken :  {}".format(str((time.time() - ti))))
