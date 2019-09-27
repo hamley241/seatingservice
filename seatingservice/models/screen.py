@@ -165,16 +165,18 @@ class Screen(object):
         Returns:  [] - An available or  list containing Seat PKs/ names if found
 
         """
-
-        consecutive_string = r"(?=" + "".join(["1"] * num_of_seats) + ")"
-        # consecutive_re = re.compile(consecutive_string)  #for overlapping
-        consecutive_re = re.compile(r"(?=" + consecutive_string + ")")
+        # Construction regex for required pattern ex: "1111" for four consecutive seats
+        consecutive_string = "".join(["1"] * num_of_seats)
+        consecutive_re = re.compile(consecutive_string)
+        # consecutive_re = re.compile(r"(?=" + consecutive_string + ")")  #for overlapping
+        # Getting the Arrat representation of seat layout with 1s at vacant/available seats
         available_seats_indicator_arr = self.get_available_seats_indicator_array(available_seats)
         for cnt, (row, rowdata) in enumerate(available_seats.items()):
-            # available_seats_indicator_arr = self.get_numpy_arr_wth_row_available_indicators(row, rowdata)
-            if available_seats_indicator_arr[cnt].sum() >= num_of_seats:
+            # checking if a row has enough empty seats first before checking for consecutive
+            if self._has_enough_empty_seats(available_seats_indicator_arr[cnt], num_of_seats):
+                # gets stringhash of row with 1 and 0 ex: "110110"
                 row_hash = self._get_string_hash(available_seats_indicator_arr[cnt])
-                results = list(consecutive_re.finditer(row_hash))
+                results = list(consecutive_re.finditer(row_hash))  # Searching through regex
                 if results:
                     return self._find_centered_consecutive(results, row, num_of_seats)
         return []
@@ -192,6 +194,7 @@ class Screen(object):
         best_position = self._get_best_seat_position(row)
         smallest_mean_diff = sys.maxsize
         best_search_result = None
+        # Among the set of consecutive seats found we check for one which is close to desired position (center)
         for search_result in consecutive_search_results:
             res_mean = statistics.mean([search_result.span()[0], search_result.span()[0] + num_seats])
             distance_between_means = abs(res_mean - best_position)
@@ -201,6 +204,7 @@ class Screen(object):
         logging.debug(
             "Found consecutive search results for {} seats in Row {}".format(str(best_search_result.span()[0]),
                                                                              str(row)))
+        # Returning a list with seat identifiers
         return [Seat.get_seat_name(row, col + 1) for col in
                 range(best_search_result.span()[0], best_search_result.span()[0] + num_seats)]
 
@@ -227,16 +231,30 @@ class Screen(object):
 
         """
         available_seats_arr = self.get_available_seats_indicator_array(available_seats)
-        row_wise_sum = available_seats_arr.sum(axis=1)
+        row_wise_sum = available_seats_arr.sum(axis=1)  # indicates number of free/vacant seats row wise
+        # checking if screen has enough seats to accomodate the request
         if not self._can_find_available(row_wise_sum, num_of_seats):
             logging.debug("Cannot assign seats seats ")
             return []
+        # check if any row has enough empty seats -> so all seats can atleast be in same row
         if self._can_find_available_in_same_row(row_wise_sum, num_of_seats):
             return self._find_seats_from_same_row(available_seats, available_seats_arr, num_of_seats, row_wise_sum)
 
         # DEFAULT CASE GREEDY ASSIGNMENT
         logging.debug("Cannot assign in a single row {} ".format((str(num_of_seats))))
         return self._find_seats_from_different_rows(available_seats, num_of_seats)
+
+    def _has_enough_empty_seats(self, available_seats_indicator_arr_row, num_of_seats):
+        """
+        Checks if a given row has
+        Args:
+            available_seats_indicator_arr_row:
+            num_of_seats:
+
+        Returns:
+
+        """
+        return sum(available_seats_indicator_arr_row) >= num_of_seats
 
     def _can_find_available(self, rows_sum, num_of_seats):
         """
@@ -428,17 +446,24 @@ class Screen(object):
         indicator_matrix = self.get_available_seats_indicator_array(available_seats)
         row_names = list(available_seats.keys())
         view_str = ""
-        indicator_matrix = 1-indicator_matrix
+        # Indication matrix has 1 at vacant spots, we wants 0s
+        indicator_matrix = 1 - indicator_matrix  # 0 -> -1 and 1 -> 0
+        # Interchanged 0's with -1
         indicator_matrix[indicator_matrix == -1] = 0
         max_len = 0
         for row_num, row_identifier in enumerate(row_names):
             len_row = int(len(indicator_matrix[row_num]))
             if max_len < len_row:
                 max_len = len_row
-            row_representation = "\t".join(str(int(indication)) for indication in indicator_matrix[row_num])
+            # Getting row representation
+            row_representation = "\t".join(
+                str(int(indication)) for indication in indicator_matrix[row_num])  # RowString
+            # Adding Row name to Rowstring
             view_str = "{}{}\t{}\n".format(view_str, str(row_identifier), row_representation)
-        view_str = "\n{}{}\t{}\n".format(view_str," ", "\t".join([ str(cnt) for cnt in (range(1, max_len+1))]))
+        # concatenating all row strings
+        view_str = "\n{}{}\t{}\n".format(view_str, " ", "\t".join([str(cnt) for cnt in (range(1, max_len + 1))]))
         return view_str
+
 
 from utils.config import Config
 import time
@@ -454,14 +479,19 @@ if __name__ == "__main__":
     import random
 
     # f = open("Debug.txt.1", "w")
-    for i in range(1, 8):
+    for i in range(1, 100+1):
         num_seats = random.randint(1, 10)
         print("Seats requested {}".format(str(num_seats)))
         bs = scr.book(num_seats=num_seats, txn_id="R0{}".format(str(i)))
         # logging.info("\t".join([str(item) for item in bs]))
-        logging.info("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
+        ascount = scr.get_available_seats_count()
+        logging.info("available seats count {}\n##########\n".format(str(scr.get_available_seats_count())))
+        if ascount == 0:
+            print("At i = {}".format(str(i)))
+            break
         es = scr._get_available_seats()
         resp = scr.get_available_seats_indicator_array(es)
         print(scr.get_bookings())
-        logging.info(scr.get_view())
+        if i%10 ==0:
+            logging.info(scr.get_view())
     logging.info("Time taken :  {}".format(str((time.time() - ti))))
