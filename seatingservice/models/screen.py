@@ -167,7 +167,7 @@ class Screen(object):
         """
 
         consecutive_string = r"(?=" + "".join(["1"] * num_of_seats) + ")"
-        # consecutive_re = re.compile(consecutive_string)
+        # consecutive_re = re.compile(consecutive_string)  #for overlapping
         consecutive_re = re.compile(r"(?=" + consecutive_string + ")")
         available_seats_indicator_arr = self.get_available_seats_indicator_array(available_seats)
         for cnt, (row, rowdata) in enumerate(available_seats.items()):
@@ -199,7 +199,8 @@ class Screen(object):
                 best_search_result = search_result
                 smallest_mean_diff = distance_between_means
         logging.debug(
-            "Found consecutive search results for {} seats in Row {}".format(str(best_search_result.span()), str(row)))
+            "Found consecutive search results for {} seats in Row {}".format(str(best_search_result.span()[0]),
+                                                                             str(row)))
         return [Seat.get_seat_name(row, col + 1) for col in
                 range(best_search_result.span()[0], best_search_result.span()[0] + num_seats)]
 
@@ -387,7 +388,7 @@ class Screen(object):
 
     def get_available_seats_indicator_array(self, available_seats):
         """
-        Marks the available seats as 1 in a binary array in SeatsLayout structure with zeros padded for making it homogenous
+        Marks the available seats as 1 in a binary array in SeatsLayout structure
         Args:
             available_seats: AvailableSeats obj
 
@@ -412,6 +413,32 @@ class Screen(object):
         """
         return len(self.get_bookings().get(txn_id, [])) > 0
 
+    def get_view(self):
+        """
+        Computes a view like
+        J	0 0 0 0 0 0 1 1
+        I	0 0 0 0 0 0 0 0
+        H	0 0 0 0 0 0 0 0
+        G	0 0 0 0 0 0 0 0
+            1 2 3 4 5 6 7 8
+        Returns: str, The View of Screen as a string
+
+        """
+        available_seats = self._get_available_seats()
+        indicator_matrix = self.get_available_seats_indicator_array(available_seats)
+        row_names = list(available_seats.keys())
+        view_str = ""
+        indicator_matrix = 1-indicator_matrix
+        indicator_matrix[indicator_matrix == -1] = 0
+        max_len = 0
+        for row_num, row_identifier in enumerate(row_names):
+            len_row = int(len(indicator_matrix[row_num]))
+            if max_len < len_row:
+                max_len = len_row
+            row_representation = "\t".join(str(int(indication)) for indication in indicator_matrix[row_num])
+            view_str = "{}{}\t{}\n".format(view_str, str(row_identifier), row_representation)
+        view_str = "\n{}{}\t{}\n".format(view_str," ", "\t".join([ str(cnt) for cnt in (range(1, max_len+1))]))
+        return view_str
 
 from utils.config import Config
 import time
@@ -427,7 +454,7 @@ if __name__ == "__main__":
     import random
 
     # f = open("Debug.txt.1", "w")
-    for i in range(1, 200):
+    for i in range(1, 8):
         num_seats = random.randint(1, 10)
         print("Seats requested {}".format(str(num_seats)))
         bs = scr.book(num_seats=num_seats, txn_id="R0{}".format(str(i)))
@@ -436,4 +463,5 @@ if __name__ == "__main__":
         es = scr._get_available_seats()
         resp = scr.get_available_seats_indicator_array(es)
         print(scr.get_bookings())
+        logging.info(scr.get_view())
     logging.info("Time taken :  {}".format(str((time.time() - ti))))
