@@ -12,7 +12,8 @@
 - pip install -r requirements.txt
 - python seatingservice/seat_assignment_script.py /tmp/sampel.txt
 	- It outputs name of the file containing results in the last line printed onto console. Ex: "Responses can be found at /home/hamley/PycharmProjects/seatingservice/responses.txt"
-
+- To run tests
+	- python -m unittest discover -s tests -p *tests.py
 ## SOME DESIGN CONSIDERATIONS
 - Project is structured in a way that a server/HTTP Framework can be introduced with minimal efforts 
 - Avoid duplicacy. So if changes wrt a piece of behaviour is needed. It needs changes at only one location
