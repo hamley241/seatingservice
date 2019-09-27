@@ -19,7 +19,6 @@
 - Avoid duplicacy. So if changes wrt a piece of behaviour is needed. It needs changes at only one location
 - Small stateless functions wherever possible
 - Seperation of responsibilities -> Each function has single responsibility wherever possible
-[comment]: <> - Datastores (SeatsLayout, UnavailableSeats) are created in a way that they can replicate a db behaviour in retrieval
 - Can be evolved to support more usecases
 - Each line in the requests file is treated as event, and an event processor processes these events, so that this can be extended to a more realistic use case like reading from a consumer(Kafka) maybe
 - The eventsprocessor can be evolved into a cleaner rule engine based on the type of events ( to support mulitple events) with minimal efforts
