@@ -25,7 +25,7 @@ class UnavailableSeats(SeatOrderDict):
         try:
             self.get_row(row).add(col)
         except KeyError as e:
-            self.add_row(row,set())
+            self.add_row(row, set())
             self.get_row(row).add(col)
 
     def __str__(self):

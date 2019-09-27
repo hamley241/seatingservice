@@ -2,6 +2,8 @@ import statistics
 import sys
 import numpy as np
 import re
+
+from models.exceptions import ClientError
 from utils import numpy_fillna
 from utils.constants import SeatStatus
 from models.availableseats import AvailableSeats
@@ -10,6 +12,7 @@ from models.unassignedseats import UnavailableSeats
 from models.seatslayout import SeatsLayout
 from models.seat import Seat
 from utils.logs import Logger
+from models.bookingrequests import BookingRequests
 import utils
 
 logging = Logger.get_logger()
@@ -29,6 +32,7 @@ class Screen(object):
         self._init_layout(seats_conf)
         self._init_unavailable_seats(seats_conf)
         self._total_seats_count = self.get_layout().get_total_size()
+        self._bookings = BookingRequests()
 
     def _init_layout(self, layout_config):
         """
@@ -94,6 +98,14 @@ class Screen(object):
         """
         return self._total_seats_count
 
+    def get_bookings(self):
+        """
+
+        Returns: BookingRequest object
+
+        """
+        return self._bookings
+
     def get_available_seats_count(self):
         """
 
@@ -101,7 +113,7 @@ class Screen(object):
 
         """
         logging.debug("Total seats {} Unavailable seats {}".format(str(self.get_total_seats_count()),
-                                                         str(self.get_unavailable_seats().get_total_size())))
+                                                                   str(self.get_unavailable_seats().get_total_size())))
         return self.get_total_seats_count() - self.get_unavailable_seats().get_total_size()
 
     def get_layout(self):
@@ -154,9 +166,9 @@ class Screen(object):
 
         """
 
-        consecutive_string = r"(?="+"".join(["1"] * num_of_seats)+")"
+        consecutive_string = r"(?=" + "".join(["1"] * num_of_seats) + ")"
         # consecutive_re = re.compile(consecutive_string)
-        consecutive_re = re.compile(r"(?="+consecutive_string+")")
+        consecutive_re = re.compile(r"(?=" + consecutive_string + ")")
         available_seats_indicator_arr = self.get_available_seats_indicator_array(available_seats)
         for cnt, (row, rowdata) in enumerate(available_seats.items()):
             # available_seats_indicator_arr = self.get_numpy_arr_wth_row_available_indicators(row, rowdata)
@@ -181,7 +193,7 @@ class Screen(object):
         smallest_mean_diff = sys.maxsize
         best_search_result = None
         for search_result in consecutive_search_results:
-            res_mean = statistics.mean([search_result.span()[0], search_result.span()[0]+num_seats])
+            res_mean = statistics.mean([search_result.span()[0], search_result.span()[0] + num_seats])
             distance_between_means = abs(res_mean - best_position)
             if distance_between_means < smallest_mean_diff:
                 best_search_result = search_result
@@ -189,7 +201,7 @@ class Screen(object):
         logging.debug(
             "Found consecutive search results for {} seats in Row {}".format(str(best_search_result.span()), str(row)))
         return [Seat.get_seat_name(row, col + 1) for col in
-                range(best_search_result.span()[0], best_search_result.span()[0]+num_seats)]
+                range(best_search_result.span()[0], best_search_result.span()[0] + num_seats)]
 
     def _get_best_seat_position(self, row):
         """
@@ -331,21 +343,31 @@ class Screen(object):
         Returns: [] A list of seats reserved
 
         """
+
         try:
             num_seats = utils.validate_positive_int(num_seats)
         except Exception as e:
             raise ValueError()
+
+        if self.is_duplicate_booking(txn_id):
+            reserved_seats = self.get_bookings().get(txn_id)
+            if not len(reserved_seats) == num_seats:
+                error_msg = "Duplicate request with different number of seats requests {} {}".format(str(txn_id),
+                                                                                                     str(num_seats))
+                raise ClientError(error_msg)
+            return reserved_seats
+
         available_seats = self._get_available_seats()
         seats_list = self._find_available_seats_to_assign(available_seats, num_seats)
         if seats_list:
-            return self._book(seats_list)
+            return self._book(seats_list, txn_id)
         logging.error("No seats found for request {} of {} - Current available seats {} ".format(str(num_seats),
                                                                                                  str(txn_id),
                                                                                                  str(
                                                                                                      available_seats.get_total_size())))
         return seats_list
 
-    def _book(self, seats_list, status=SeatStatus.BOOKED):
+    def _book(self, seats_list, txn_id, status=SeatStatus.BOOKED):
         """
         Marks a seat for given Screen at show timings as Unavaiable
         Data should be validated before calling this method (though safe checks are in place)
@@ -360,6 +382,7 @@ class Screen(object):
             if self.get_unavailable_seats().has(seat):
                 raise Exception()
             self.get_unavailable_seats().add(seat)
+        self.get_bookings().set(txn_id, seats_list)
         return seats_list
 
     def get_available_seats_indicator_array(self, available_seats):
@@ -378,6 +401,17 @@ class Screen(object):
             arr_holder.append(available_indicator[1:])
         return numpy_fillna(np.array(arr_holder))
 
+    def is_duplicate_booking(self, txn_id):
+        """
+        Checks if the booking for the request already exists
+        Args:
+            txn_id: Reference TxnID
+
+        Returns: bool, True if booking exists
+
+        """
+        return len(self.get_bookings().get(txn_id, [])) > 0
+
 
 from utils.config import Config
 import time
@@ -393,13 +427,13 @@ if __name__ == "__main__":
     import random
 
     # f = open("Debug.txt.1", "w")
-    for i in range(1, 55):
+    for i in range(1, 200):
         num_seats = random.randint(1, 10)
         print("Seats requested {}".format(str(num_seats)))
-        bs = scr.book(num_seats=num_seats)
+        bs = scr.book(num_seats=num_seats, txn_id="R0{}".format(str(i)))
         # logging.info("\t".join([str(item) for item in bs]))
         logging.info("available seats count {}\n##########\n".format(scr.get_available_seats_count()))
         es = scr._get_available_seats()
         resp = scr.get_available_seats_indicator_array(es)
-        # print(resp)
+        print(scr.get_bookings())
     logging.info("Time taken :  {}".format(str((time.time() - ti))))

@@ -1,4 +1,5 @@
 import app.views as views
+from models.exceptions import ClientError
 from models.screen import Screen
 from utils.config import Config
 from utils.constants import SeatsRequest
@@ -22,7 +23,7 @@ class Seats(object):
         try:
             no_seats = utils.validate_positive_int(no_seats)
         except ValueError as e:
-            logging.error("Cleint Error {}".format(str(request_params)))
+            logging.error("Client Error {}".format(str(request_params)))
             return views.get_bad_request_response(Seats._get_response_body(txn_id))
 
         ## Call models to assign actual seats
@@ -31,6 +32,10 @@ class Seats(object):
             if not assigned_seats:
                 return views.get_failed_response(Seats._get_response_body(txn_id, assigned_seats))
             return views.get_success_response(Seats._get_response_body(txn_id, assigned_seats))
+        except ClientError as ce:
+            logging.error("Client error for requestID {}  {}".format(txn_id, ce))
+            return views.get_bad_request_response(Seats._get_response_body(txn_id))  # Internal server error
+
         except Exception as e:
             logging.exception(e)
             return views.get_internal_error_response(Seats._get_response_body(txn_id))  # Internal server error
