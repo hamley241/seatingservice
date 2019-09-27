@@ -24,7 +24,8 @@ class Seat(object):
     def get_metedata(self):
         return self._metadata
 
-    def validate_row(self, row):
+    @staticmethod
+    def validate_row( row):
         if not isinstance(row, str):
             logging.error("validate_row  Expecting a string got {}".format(type(row)))
             raise TypeError("Expecting String got {}".format(type(row)))
@@ -34,7 +35,8 @@ class Seat(object):
             raise ValueError("Expecting a valued string got empty string")
         return row.strip(" ")
 
-    def validate_col(self, col):
+    @staticmethod
+    def validate_col(col):
         if not isinstance(col, int):
             try:
                 col = int(col.strip())
@@ -50,7 +52,8 @@ class Seat(object):
     def __str__(self):
         return "".join([self.get_row(), str(self.get_col())])
 
-    def validate_seats_type(self, seat_type):
+    @staticmethod
+    def validate_seats_type(seat_type):
         if not isinstance(seat_type, SeatType):
             logging.error("validate_seats_type  Expecting a SeatType input got {}".format(type(seat_type)))
             raise TypeError("Expecting validate_seats_type got {}".format(type(seat_type)))

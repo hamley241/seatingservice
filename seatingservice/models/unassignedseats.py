@@ -22,7 +22,11 @@ class UnavailableSeats(SeatOrderDict):
 
     def add(self, complete_seat_number):
         row, col = self._get_row_col_numbers(complete_seat_number)
-        self.get_row(row).add(col)
+        try:
+            self.get_row(row).add(col)
+        except KeyError as e:
+            self.add_row(row,set())
+            self.get_row(row).add(col)
 
     def __str__(self):
         response_str = ""
